@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Attestation de versement - A4 portrait.
+  Compile with JasperReports 6.x/7.x and fill with a Map<String, Object>
+  plus new JREmptyDataSource(1).
+-->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="attestation_versement"
+              pageWidth="595"
+              pageHeight="842"
+              columnWidth="523"
+              leftMargin="36"
+              rightMargin="36"
+              topMargin="28"
+              bottomMargin="28"
+              whenNoDataType="AllSectionsNoDetail"
+              uuid="ed55bd29-f458-4709-90c4-654e860ec472">
+    <property name="net.sf.jasperreports.default.font.name" value="SansSerif"/>
+    <!-- API/body parameters -->
+    <parameter name="logoHeader" class="java.io.InputStream" isForPrompting="false"/>
+    <parameter name="logoSignature" class="java.io.InputStream" isForPrompting="false"/>
+    <parameter name="civilite" class="java.lang.String"/>
+    <parameter name="nom" class="java.lang.String"/>
+    <parameter name="prenom" class="java.lang.String"/>
+    <parameter name="adresse1" class="java.lang.String"/>
+    <parameter name="adresse2" class="java.lang.String"/>
+    <parameter name="ville" class="java.lang.String"/>
+    <parameter name="numeroAdhesion" class="java.lang.String"/>
+    <parameter name="dateEffet" class="java.lang.String"/>
+    <parameter name="libelleContrat" class="java.lang.String"/>
+    <parameter name="referenceContrat" class="java.lang.String"/>
+    <parameter name="echeance" class="java.lang.String"/>
+    <parameter name="montantVersement" class="java.lang.String"/>
+    <parameter name="dateEncaissement" class="java.lang.String"/>
+    <queryString><![CDATA[]]></queryString>
+    <style name="Base" fontName="SansSerif" fontSize="9" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+    <style name="Bold" style="Base" isBold="true"/>
+    <style name="Small" style="Base" fontSize="7"/>
+    <style name="TableHeader" style="Bold" hTextAlign="Center" vTextAlign="Middle">
+        <box>
+            <pen lineWidth="0.7"/>
+            <topPen lineWidth="0.7"/>
+            <leftPen lineWidth="0.7"/>
+            <bottomPen lineWidth="0.7"/>
+            <rightPen lineWidth="0.7"/>
+        </box>
+    </style>
+    <style name="TableCell" style="Base" vTextAlign="Middle">
+        <box>
+            <pen lineWidth="0.7"/>
+            <topPen lineWidth="0.7"/>
+            <leftPen lineWidth="0.7"/>
+            <bottomPen lineWidth="0.7"/>
+            <rightPen lineWidth="0.7"/>
+        </box>
+        <paragraph leftIndent="5"/>
+    </style>
+    <background>
+        <band splitType="Stretch"/>
+    </background>
+    <title>
+        <band height="650" splitType="Prevent">
+            <!-- Header logo: omitted cleanly when the stream is null -->
+            <image onErrorType="Blank">
+                <reportElement x="0" y="0" width="160" height="42" uuid="928c9ced-95d1-46d0-9b52-fb78d52e667b"/>
+                <imageExpression><![CDATA[$P{logoHeader}]]></imageExpression>
+            </image>
+            <staticText>
+                <reportElement style="Bold" x="7" y="55" width="220" height="16" uuid="a09a465d-d3c9-4df3-b06f-077ff4fcb9de"/>
+                <text><![CDATA[Votre interlocuteur]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Base" x="7" y="80" width="290" height="44" uuid="b7aa1021-a6a3-4a64-b26b-e8844d58724b"/>
+                <text><![CDATA[Direction Relation Clients
+Tél : 05 22 26 36 36 (du lundi au vendredi de 8h à 16h30)
+E-mail : relationclient@lamarocainevie.com]]></text>
+            </staticText>
+            <!-- Recipient block -->
+            <textField isBlankWhenNull="true">
+                <reportElement style="Base" x="338" y="56" width="178" height="16" uuid="bf3e54f8-491b-4d62-87f7-b3e59a3626ef"/>
+                <textFieldExpression><![CDATA[
+                    (($P{civilite} == null ? "" : $P{civilite} + " ")
+                    + ($P{nom} == null ? "" : $P{nom} + " ")
+                    + ($P{prenom} == null ? "" : $P{prenom})).trim()
+                ]]></textFieldExpression>
+            </textField>
