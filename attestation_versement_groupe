@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="attestation_versement_groupe"
+              pageWidth="595" pageHeight="842" columnWidth="523"
+              leftMargin="36" rightMargin="36" topMargin="28" bottomMargin="28"
+              whenNoDataType="AllSectionsNoDetail"
+              uuid="5f73567c-4605-42cf-b84f-61d625d08e15">
+
+    <property name="net.sf.jasperreports.default.font.name" value="SansSerif"/>
+
+    <style name="Base" fontName="SansSerif" fontSize="9"
+           pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+    <style name="Bold" style="Base" isBold="true"/>
+    <style name="Small" style="Base" fontSize="7"/>
+    <style name="Cell" style="Base" vTextAlign="Middle">
+        <box>
+            <pen lineWidth="0.7"/>
+            <topPen lineWidth="0.7"/><leftPen lineWidth="0.7"/>
+            <bottomPen lineWidth="0.7"/><rightPen lineWidth="0.7"/>
+        </box>
+        <paragraph leftIndent="5"/>
+    </style>
+    <style name="HeaderCell" style="Cell" hTextAlign="Center" isBold="true"/>
+
+    <subDataset name="EcheancesDataset" uuid="6c9400af-a890-42c7-9163-bf2b297fcd04">
+        <field name="echeance" class="java.lang.String"/>
+        <field name="montantVersement" class="java.lang.Number"/>
+        <field name="dateEncaissement" class="java.lang.String"/>
+    </subDataset>
+
+    <!-- Images loaded from src/main/resources/reports/images/ -->
+    <parameter name="logoHeader" class="java.io.InputStream" isForPrompting="false"/>
+    <parameter name="logoSignature" class="java.io.InputStream" isForPrompting="false"/>
+
+    <queryString><![CDATA[]]></queryString>
+
+    <!-- Exact properties of body.data for ATTESTATION_VERSEMENT_GROUPE -->
+    <field name="titre" class="java.lang.String"/>
+    <field name="nom" class="java.lang.String"/>
+    <field name="prenom" class="java.lang.String"/>
+    <field name="adresse1" class="java.lang.String"/>
+    <field name="adresse2" class="java.lang.String"/>
+    <field name="ville" class="java.lang.String"/>
+    <field name="pays" class="java.lang.String"/>
+    <field name="numeroAdhesion" class="java.lang.String"/>
+    <field name="libelleContrat" class="java.lang.String"/>
+    <field name="numeroPolice" class="java.lang.String"/>
+    <field name="echeances" class="java.util.List"/>
+
+    <background><band splitType="Stretch"/></background>
+
+    <title>
+        <band height="650" splitType="Prevent">
+            <image onErrorType="Blank">
+                <reportElement x="0" y="0" width="160" height="42"
+                               uuid="81aa439c-1c96-470f-96be-78812241c072"/>
+                <imageExpression><![CDATA[$P{logoHeader}]]></imageExpression>
+            </image>
+
+            <staticText>
+                <reportElement style="Bold" x="7" y="50" width="220" height="15"
+                               uuid="ec654d76-729f-4189-825a-9511196211ed"/>
+                <text><![CDATA[Votre interlocuteur]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Base" x="7" y="70" width="310" height="44"
+                               uuid="0561dd1e-23d3-4779-b731-f576f689b1df"/>
+                <text><![CDATA[Direction Relation Clients
+Tél : 05 22 26 36 36 (du lundi au vendredi de 8h à 16h30)
+E-mail : relationclient.lmv@lamarocainevie.com]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Base" x="7" y="117" width="310" height="30"
+                               uuid="40549a43-eaa7-4160-a765-8621785452ce"/>
+                <textElement><font isBold="true"/></textElement>
+                <text><![CDATA[Où adresser votre courrier
+ventilationcotis.retraite@lamarocainevie.com]]></text>
+            </staticText>
+
+            <!-- Recipient -->
+            <textField isBlankWhenNull="true">
+                <reportElement style="Base" x="338" y="52" width="178" height="16"
+                               uuid="5bcff6ef-a5cb-414e-b62a-88acf8b107ce"/>
+                <textFieldExpression><![CDATA[
+                    (($F{titre} == null ? "" : $F{titre} + " ")
+                    + ($F{nom} == null ? "" : $F{nom} + " ")
+                    + ($F{prenom} == null ? "" : $F{prenom})).trim()
+                ]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement style="Base" x="338" y="68" width="178" height="32"
+                               uuid="c66fd8c7-c4ee-42c8-844d-b7580a68dc2b"/>
+                <textFieldExpression><![CDATA[
+                    ($F{adresse1} == null ? "" : $F{adresse1})
+                    + ($F{adresse2} == null || $F{adresse2}.trim().isEmpty()
+                        ? "" : "\n" + $F{adresse2})
+                ]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement style="Base" x="338" y="102" width="178" height="16"
+                               uuid="f59f1fc3-a671-4afe-9003-950cb58ac8f1"/>
+                <textFieldExpression><![CDATA[$F{ville}]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement style="Base" x="338" y="118" width="178" height="16"
+                               uuid="30cb8d92-b5bc-4d50-a0d9-997c64120dce"/>
+                <textFieldExpression><![CDATA[$F{pays}]]></textFieldExpression>
+            </textField>
+
+            <!-- References -->
+            <staticText>
+                <reportElement style="Bold" x="7" y="166" width="120" height="16"
+                               uuid="34e10e64-ab2e-4368-ad92-69c068c3be8c"/>
+                <text><![CDATA[Références du dossier -]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement style="Bold" x="130" y="166" width="205" height="16"
+                               uuid="82c73b5e-d4f6-4792-a2e4-ed25aa83d20c"/>
+                <textFieldExpression><![CDATA[$F{libelleContrat}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement style="Base" x="17" y="187" width="75" height="16"
+                               uuid="49de368d-8153-413d-8f09-3f885210441f"/>
+                <text><![CDATA[Adhésion N° :]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement style="Base" x="92" y="187" width="180" height="16"
+                               uuid="9483345f-cd6f-4b12-8e48-c5ce3152a4c0"/>
+                <textFieldExpression><![CDATA[$F{numeroAdhesion}]]></textFieldExpression>
+            </textField>
+            <textField pattern="'Casablanca, le' dd/MM/yyyy">
+                <reportElement style="Base" x="360" y="187" width="156" height="16"
+                               uuid="a79d3f82-a098-4f74-b851-bf58a40812aa"/>
+                <textElement textAlignment="Right"/>
+                <textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+            </textField>
+
+            <staticText>
+                <reportElement style="Bold" x="7" y="230" width="50" height="17"
+                               uuid="b8ea3ead-ac0d-4f6e-8508-df0188bb7a55"/>
+                <text><![CDATA[OBJET :]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Base" x="62" y="230" width="300" height="17"
+                               uuid="cd1fa064-dcb3-46fe-999d-72c27261c817"/>
+                <text><![CDATA[ATTESTATION DE VERSEMENT (*)]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Base" x="7" y="257" width="150" height="17"
+                               uuid="aed9d7cb-c7cd-4a0f-b228-ddc978f9def4"/>
+                <text><![CDATA[Cher Assuré,]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Base" x="7" y="284" width="100" height="15"
+                               uuid="6554c324-a5f8-430b-888e-4259cec0952e"/>
+                <text><![CDATA[Par suite]]></text>
+            </staticText>
+            <textField isStretchWithOverflow="true">
+                <reportElement style="Base" x="7" y="299" width="509" height="34"
+                               uuid="73e7a698-7367-4079-b643-66becc9145f1"/>
+                <textFieldExpression><![CDATA[
+                    "de votre demande, nous vous prions de trouver, ci-après, l'état des versements effectués dans le cadre\n"
+                    + "de votre contrat "
+                    + ($F{libelleContrat} == null ? "" : $F{libelleContrat})
+                    + " N° " + ($F{numeroPolice} == null ? "" : $F{numeroPolice}) + "."
+                ]]></textFieldExpression>
+            </textField>
+
+            <!-- Dynamic payment table -->
+            <staticText>
+                <reportElement style="HeaderCell" x="0" y="346" width="171" height="23"
+                               uuid="cf44ec2c-2bf1-4e2b-9dc4-8734813afb01"/>
+                <text><![CDATA[Échéance]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="HeaderCell" x="171" y="346" width="172" height="23"
+                               uuid="88ccc0fc-8846-444c-8580-26e4e260595d"/>
+                <text><![CDATA[Montant Versement]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="HeaderCell" x="343" y="346" width="180" height="23"
+                               uuid="f50fa1ba-75c9-48b3-8a8e-7fbc905a4ba8"/>
+                <text><![CDATA[Date d'Encaissement]]></text>
+            </staticText>
+
+            <componentElement>
+                <reportElement positionType="Float" x="0" y="369" width="523" height="26"
+                               uuid="52dbfe17-efc1-4c13-81a2-7387e85bcbbf"/>
+                <jr:list printOrder="Vertical">
+                    <datasetRun subDataset="EcheancesDataset"
+                                uuid="b00a38ae-75bb-4554-abdb-5ee9d2ba6eaa">
+                        <dataSourceExpression><![CDATA[
+                            new net.sf.jasperreports.engine.data.JRMapCollectionDataSource(
+                                $F{echeances} == null
+                                    ? java.util.Collections.emptyList()
+                                    : (java.util.Collection)$F{echeances})
+                        ]]></dataSourceExpression>
+                    </datasetRun>
+                    <jr:listContents height="26" width="523">
+                        <textField isBlankWhenNull="true">
+                            <reportElement style="Cell" x="0" y="0" width="171" height="26"
+                                           uuid="b7fc2bc2-ab04-4768-8f0c-af8d63cd8eb9"/>
+                            <textFieldExpression><![CDATA[$F{echeance}]]></textFieldExpression>
+                        </textField>
+                        <textField isBlankWhenNull="true" pattern="#,##0.00">
+                            <reportElement style="Cell" x="171" y="0" width="172" height="26"
+                                           uuid="0efcfb09-f8cb-4135-8d68-109873123e5e"/>
+                            <textElement textAlignment="Right">
+                                <paragraph rightIndent="5"/>
+                            </textElement>
+                            <textFieldExpression><![CDATA[$F{montantVersement}]]></textFieldExpression>
+                        </textField>
+                        <textField isBlankWhenNull="true">
+                            <reportElement style="Cell" x="343" y="0" width="180" height="26"
+                                           uuid="ab3118b3-f04d-41cf-ac3f-e786dbb571ab"/>
+                            <textFieldExpression><![CDATA[$F{dateEncaissement}]]></textFieldExpression>
+                        </textField>
+                    </jr:listContents>
+                </jr:list>
+            </componentElement>
+
+            <staticText>
+                <reportElement style="Base" positionType="Float"
+                               x="7" y="408" width="509" height="18"
+                               uuid="9f3284a9-cce2-423b-b353-aa6ab522d141"/>
+                <textElement><font isItalic="true"/></textElement>
+                <text><![CDATA[(*) Sauf erreur ou omission de notre part.]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Base" positionType="Float"
+                               x="7" y="432" width="509" height="34"
+                               uuid="e7f5efe5-9bab-4cf5-ac7d-67cd61b46b7b"/>
+                <text><![CDATA[Pour tous renseignements complémentaires, nous vous invitons à contacter la Direction Relations
+Clients au 05 22 26 36 36 (du lundi au vendredi de 8h à 16h30).]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Base" positionType="Float"
+                               x="7" y="474" width="509" height="34"
+                               uuid="607b222f-a6ae-49b8-bdd5-34eea9859297"/>
+                <text><![CDATA[En vous remerciant de votre confiance, nous vous prions d'agréer, Cher Assuré, nos meilleures salutations.]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement style="Bold" positionType="Float"
+                               x="360" y="548" width="150" height="16"
+                               uuid="e11a1941-7d3a-48a5-b64f-f16d2dcfc867"/>
+                <text><![CDATA[La Marocaine Vie]]></text>
+            </staticText>
+            <image onErrorType="Blank">
+                <reportElement positionType="Float" x="345" y="570" width="165" height="42"
+                               uuid="5bd9c32c-bfee-4215-be00-26e946b7ad56"/>
+                <imageExpression><![CDATA[$P{logoSignature}]]></imageExpression>
+            </image>
+        </band>
+    </title>
+
+    <detail><band height="1"/></detail>
+
+    <pageFooter>
+        <band height="82" splitType="Prevent">
+            <staticText>
+                <reportElement style="Small" x="7" y="28" width="160" height="45"
+                               uuid="c8577ab9-09bc-414a-a9b6-d66ef51502bd"/>
+                <text><![CDATA[37, Boulevard Moulay Youssef
+Casablanca
+Maroc]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Small" x="194" y="28" width="160" height="52"
+                               uuid="daeb21cc-f298-455c-869a-ee96431347b1"/>
+                <text><![CDATA[Tél : (212) 05 22 43 31 00
+Fax : (212) 05 22 26 19 71
+lamarocainevie@lamarocainevie.com
+www.lamarocainevie.com]]></text>
+            </staticText>
+            <staticText>
+                <reportElement style="Small" x="370" y="28" width="146" height="52"
+                               uuid="193fc326-ddd7-46ab-b570-328427b52768"/>
+                <text><![CDATA[Entreprise régie par la loi n°17-99
+portant code des assurances
+Société Anonyme au Capital de
+231.750.000 DH - RC 36613]]></text>
+            </staticText>
+        </band>
+    </pageFooter>
+</jasperReport>
