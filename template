@@ -5,6 +5,7 @@
   plus new JREmptyDataSource(1).
 -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components"
               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
               xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
               name="attestation_versement"
@@ -18,23 +19,6 @@
               whenNoDataType="AllSectionsNoDetail"
               uuid="ed55bd29-f458-4709-90c4-654e860ec472">
     <property name="net.sf.jasperreports.default.font.name" value="SansSerif"/>
-    <!-- API/body parameters -->
-    <parameter name="logoHeader" class="java.io.InputStream" isForPrompting="false"/>
-    <parameter name="logoSignature" class="java.io.InputStream" isForPrompting="false"/>
-    <parameter name="civilite" class="java.lang.String"/>
-    <parameter name="nom" class="java.lang.String"/>
-    <parameter name="prenom" class="java.lang.String"/>
-    <parameter name="adresse1" class="java.lang.String"/>
-    <parameter name="adresse2" class="java.lang.String"/>
-    <parameter name="ville" class="java.lang.String"/>
-    <parameter name="numeroAdhesion" class="java.lang.String"/>
-    <parameter name="dateEffet" class="java.lang.String"/>
-    <parameter name="libelleContrat" class="java.lang.String"/>
-    <parameter name="referenceContrat" class="java.lang.String"/>
-    <parameter name="echeance" class="java.lang.String"/>
-    <parameter name="montantVersement" class="java.lang.String"/>
-    <parameter name="dateEncaissement" class="java.lang.String"/>
-    <queryString><![CDATA[]]></queryString>
     <style name="Base" fontName="SansSerif" fontSize="9" pdfFontName="Helvetica" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
     <style name="Bold" style="Base" isBold="true"/>
     <style name="Small" style="Base" fontSize="7"/>
@@ -57,6 +41,27 @@
         </box>
         <paragraph leftIndent="5"/>
     </style>
+    <subDataset name="EcheancesDataset" uuid="3ee92765-ad69-458c-99ac-38a76d833465">
+        <field name="echeance" class="java.lang.String"/>
+        <field name="montantVersement" class="java.lang.Number"/>
+        <field name="dateEncaissement" class="java.lang.String"/>
+    </subDataset>
+    <!-- Optional binary resources; the API's nested "data" properties are fields below. -->
+    <parameter name="logoHeader" class="java.io.InputStream" isForPrompting="false"/>
+    <parameter name="logoSignature" class="java.io.InputStream" isForPrompting="false"/>
+    <queryString><![CDATA[]]></queryString>
+    <!-- Exact names from body.data -->
+    <field name="title" class="java.lang.String"/>
+    <field name="nom" class="java.lang.String"/>
+    <field name="prenom" class="java.lang.String"/>
+    <field name="adresse1" class="java.lang.String"/>
+    <field name="adresse2" class="java.lang.String"/>
+    <field name="ville" class="java.lang.String"/>
+    <field name="numeroAdhesion" class="java.lang.String"/>
+    <field name="dateEffet" class="java.lang.String"/>
+    <field name="libelleContrat" class="java.lang.String"/>
+    <field name="numeroContrat" class="java.lang.String"/>
+    <field name="echeances" class="java.util.List"/>
     <background>
         <band splitType="Stretch"/>
     </background>
@@ -81,8 +86,31 @@ E-mail : relationclient@lamarocainevie.com]]></text>
             <textField isBlankWhenNull="true">
                 <reportElement style="Base" x="338" y="56" width="178" height="16" uuid="bf3e54f8-491b-4d62-87f7-b3e59a3626ef"/>
                 <textFieldExpression><![CDATA[
-                    (($P{civilite} == null ? "" : $P{civilite} + " ")
-                    + ($P{nom} == null ? "" : $P{nom} + " ")
-                    + ($P{prenom} == null ? "" : $P{prenom})).trim()
+                    (($F{title} == null ? "" : $F{title} + " ")
+                    + ($F{nom} == null ? "" : $F{nom} + " ")
+                    + ($F{prenom} == null ? "" : $F{prenom})).trim()
                 ]]></textFieldExpression>
             </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement style="Base" x="338" y="72" width="178" height="30" uuid="ed711f85-bab8-4b70-adc6-bb846243e67f"/>
+                <textFieldExpression><![CDATA[
+                    ($F{adresse1} == null ? "" : $F{adresse1})
+                    + ($F{adresse2} == null || $F{adresse2}.trim().isEmpty() ? "" : "\n" + $F{adresse2})
+                ]]></textFieldExpression>
+            </textField>
+            <textField isBlankWhenNull="true">
+                <reportElement style="Base" x="338" y="108" width="178" height="16" uuid="04970602-fcf1-44ba-a931-a3e574936cb5"/>
+                <textFieldExpression><![CDATA[$F{ville}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement style="Bold" x="7" y="130" width="230" height="18" uuid="da7b4835-a793-4a33-82b7-b0ccae2bad92"/>
+                <text><![CDATA[Références du dossier]]></text>
+            </staticText>
+            <!-- Dossier table -->
+            <staticText>
+                <reportElement style="TableCell" x="0" y="151" width="95" height="24" uuid="bedb057b-e46c-4e6b-a20a-adca63723f58"/>
+                <textElement verticalAlignment="Middle"><font isBold="true"/></textElement>
+                <text><![CDATA[Assuré(e)]]></text>
+            </staticText>
+            <textField isBlankWhenNull="true">
+                <reportElement style="TableCell" x="95" y="151" width="235" height="24" uuid="052bd422-cc61-4352-b121-812b10384758"/>
