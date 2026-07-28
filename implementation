@@ -1,0 +1,211 @@
+@PostMapping("/generate")
+    public ResponseEntity<byte[]> generate(@Valid @RequestBody DocumentGenerationRequest request) {
+        DocumentGeneratorStrategy strategy = registry.resolve(request.code());
+
+        GeneratedDocument document = strategy.generate(request.data(), request.format());
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(document.format().contentType()));
+        headers.setContentDisposition(
+                ContentDisposition.attachment().filename(document.fileName()).build()
+        );
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(document.content());
+    }
+public enum DocumentFormat {
+    PDF("application/pdf", "pdf"),
+    XLSX("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "xlsx"),
+    DOCX("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "docx");
+
+    private final String contentType;
+    private final String extension;}
+
+public record DocumentGenerationRequest(
+
+        @NotBlank(message = "le code du document est obligatoire")
+        String code,
+
+        DocumentFormat format,
+
+        @NotNull(message = "data ne doit pas être null (utiliser {} si vide)")
+        Map<String, Object> data
+) {
+    public DocumentGenerationRequest {
+        if (format == null) {
+            format = DocumentFormat.PDF;
+        }
+    }
+}
+
+public record GeneratedDocument(byte[] content, String fileName, DocumentFormat format) {
+}
+
+public class EcheanceVersement {
+
+    private final String echeance;
+    private final BigDecimal montantVersement;
+    private final LocalDate dateEncaissement;
+}
+
+@Service
+@Slf4j
+public class JasperRenderingService {
+
+    // cache simple des rapports compilés (le .jrxml n'est compilé qu'une seule fois)
+    private final Map<String, JasperReport> compiledReportsCache = new ConcurrentHashMap<>();
+
+    public byte[] render(String templateClasspathLocation,
+                          Map<String, Object> parameters,
+                          Collection<?> rows,
+                          DocumentFormat format) {
+        try {
+            JasperReport jasperReport = getCompiledReport(templateClasspathLocation);
+
+            JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(rows);
+
+            Map<String, Object> params = new ConcurrentHashMap<>(parameters);
+            params.putIfAbsent(JRParameter.REPORT_LOCALE, java.util.Locale.FRENCH);
+
+            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, dataSource);
+
+            return export(jasperPrint, format);
+        } catch (JRException | IOException e) {
+            log.error(e.getMessage(), e);
+            throw new DocumentGenerationException(
+                    "Erreur lors de la génération du document Jasper (%s)".formatted(templateClasspathLocation), e);
+        }
+    }
+
+    private JasperReport getCompiledReport(String templateClasspathLocation) {
+        return compiledReportsCache.computeIfAbsent(templateClasspathLocation, this::compile);
+    }
+
+    private JasperReport compile(String templateClasspathLocation) {
+        try (InputStream jrxml = new ClassPathResource(templateClasspathLocation).getInputStream()) {
+            return JasperCompileManager.compileReport(jrxml);
+        } catch (IOException | JRException e) {
+            log.error(e.getMessage(), e);
+            throw new DocumentGenerationException(
+                    "Impossible de compiler le template " + templateClasspathLocation, e);
+        }
+    }
+
+    private byte[] export(JasperPrint jasperPrint, DocumentFormat format) throws JRException, IOException {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            switch (format) {
+                case PDF -> JasperExportManager.exportReportToPdfStream(jasperPrint, out);
+                case XLSX -> {
+                    JRXlsxExporter exporter = new JRXlsxExporter();
+                    exporter.setExporterInput(new SimpleExporterInput(jasperPrint));
+                    exporter.setExporterOutput(new SimpleOutputStreamExporterOutput(out));
+                    SimpleXlsxReportConfiguration config = new SimpleXlsxReportConfiguration();
+                    config.setOnePagePerSheet(false);
+                    config.setDetectCellType(true);
+                    exporter.setConfiguration(config);
+                    exporter.exportReport();
+                }
+                default -> throw new IllegalArgumentException("Format non géré : " + format);
+            }
+            return out.toByteArray();
+        }
+    }
+}
+@Component
+public class AttestationVersementBancassStrategy implements DocumentGeneratorStrategy {
+
+    public static final String CODE = "ATTESTATION_VERSEMENT_BANCASS";
+    private static final String TEMPLATE = "templates/attestation_versement_bancass.jrxml";
+    private static final DateTimeFormatter FR_DATE = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+    private final JasperRenderingService renderingService;
+
+    public AttestationVersementBancassStrategy(JasperRenderingService renderingService) {
+        this.renderingService = renderingService;
+    }
+
+    @Override
+    public String getDocumentCode() {
+        return CODE;
+    }
+
+    @Override
+    public GeneratedDocument generate(Map<String, Object> data, DocumentFormat format) {
+        // 1) validation + mapping des données déjà fournies (aucun accès BDD ici)
+        Map<String, Object> reportParams = buildReportParameters(data);
+        List<EcheanceVersement> echeances = buildEcheances(data);
+
+        // 2) rendu pur
+        byte[] content = renderingService.render(TEMPLATE, reportParams, echeances, format);
+
+        String numeroAdhesion = requireString(data, "numeroAdhesion");
+        String fileName = "attestation_versement_%s.%s".formatted(numeroAdhesion, format.extension());
+        return new GeneratedDocument(content, fileName, format);
+    }
+
+    private Map<String, Object> buildReportParameters(Map<String, Object> data) {
+        Map<String, Object> p = new HashMap<>();
+        p.put("titre", optionalString(data, "titre", ""));
+        p.put("nom", requireString(data, "nom"));
+        p.put("prenom", requireString(data, "prenom"));
+        p.put("adresse1", optionalString(data, "adresse1", ""));
+        p.put("adresse2", optionalString(data, "adresse2", ""));
+        p.put("ville", optionalString(data, "ville", ""));
+        p.put("numeroAdhesion", requireString(data, "numeroAdhesion"));
+        p.put("dateEffet", requireDate(data, "dateEffet").format(FR_DATE));
+        p.put("libelleContrat", requireString(data, "libelleContrat"));
+        p.put("numeroContrat", requireString(data, "numeroContrat"));
+        p.put("dateSysteme", LocalDate.now().format(FR_DATE));
+        return p;
+    }
+
+    private List<EcheanceVersement> buildEcheances(Map<String, Object> data) {
+        List<Map<String, Object>> rawLines = requireListOfMaps(data, "echeances");
+        return rawLines.stream()
+                .map(this::toEcheance)
+                .toList();
+    }
+
+    private EcheanceVersement toEcheance(Map<String, Object> line) {
+        String echeance = requireString(line, "echeance");
+        BigDecimal montant = requireDecimal(line, "montantVersement");
+        LocalDate dateEncaissement = requireDate(line, "dateEncaissement");
+        return new EcheanceVersement(echeance, montant, dateEncaissement);
+    }
+}
+
+
+public interface DocumentGeneratorStrategy {
+
+    String getDocumentCode();
+
+    GeneratedDocument generate(Map<String, Object> data, DocumentFormat format);
+}
+
+@Component
+public class DocumentStrategyRegistry {
+
+    private final Map<String, DocumentGeneratorStrategy> strategiesByCode;
+
+    public DocumentStrategyRegistry(List<DocumentGeneratorStrategy> strategies) {
+        this.strategiesByCode = strategies.stream()
+                .collect(Collectors.toUnmodifiableMap(
+                        s -> normalize(s.getDocumentCode()),
+                        Function.identity()
+                ));
+    }
+
+    public DocumentGeneratorStrategy resolve(String code) {
+        DocumentGeneratorStrategy strategy = strategiesByCode.get(normalize(code));
+        if (strategy == null) {
+            throw new DocumentTypeNotSupportedException(code);
+        }
+        return strategy;
+    }
+
+    private String normalize(String code) {
+        return code == null ? "" : code.trim().toUpperCase();
+    }
+}
+
