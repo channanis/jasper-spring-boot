@@ -1,0 +1,335 @@
+@Operation(
+            summary = "Search contracts by CIN",
+            description = "Retrieve contracts by CIN. Optionally filter by typeProduit."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Contracts found"),
+            @ApiResponse(responseCode = "404", description = "No contracts found")
+    })
+    @GetMapping("/search")
+    public List<ContratMobileDTO> searchContracts(
+            @Parameter(description = "Customer CIN", required = true)
+            @RequestParam String cin,
+            @Parameter(description = "Optional contract type")
+            @RequestParam(required = false) String typeProduit) {
+        log.info("Start resource searchContracts: cin={}, type={}", cin, typeProduit);
+        List<ContratMobileDTO> contracts = contratService.searchContracts(cin, typeProduit);
+        log.info("End resource searchContracts: cin={}, type={}", cin, typeProduit);
+        return contracts;
+    }
+
+@Transactional(readOnly = true)
+    public List<ContratMobileDTO> searchContracts(String cin, String typeProduit) {
+        log.info("Start service searchContracts: cin={}, type={}", cin, typeProduit);
+
+        List<ContratMobile> contracts = new ArrayList<>();
+
+        if (typeProduit == null || typeProduit.isBlank()) {
+            contracts = contratRepository.findAllByCinIgnoreCase(cin);
+
+        } else if (!ProductTypeEnum.EPARGNE.getLabel().equalsIgnoreCase(typeProduit)) {
+            contracts = contratRepository.findAllByCinIgnoreCaseAndTypeProduitIn(cin, List.of(typeProduit));
+
+        } else {
+            log.info("Fetching EPARGNE contracts for CIN={} using offer configuration", cin);
+            List<Offer> offersEpargnes = offerRepository.findByEpargne();
+            log.info("Offers with EPARGNE flag found: {}", offersEpargnes.size());
+
+            for (Offer offer : offersEpargnes) {
+                contracts.addAll(contratRepository.findAllByCinIgnoreCaseAndNumCat(cin, offer.getNumCat()));
+            }
+        }
+
+        List<AdherentStaff> staffContractsEntity = adherentStaffRepository.findByCinAndNumcatIgnoreCaseTrim(cin, ProduitConstants.DYNAMIQUE_ENTREPRISE);
+        List<ContratMobile> staffContracts = adherentStaffMapper.toContratsMobileList(staffContractsEntity);
+
+        Long maxId = getMaxId(contracts);
+        setIdsForContractsWithNullIds(maxId, staffContracts);
+
+        contracts.addAll(staffContracts);
+
+        contracts = contracts.stream()
+                .filter(c -> ProductTypeEnum.isAllowed(c.getTypeProduit()))
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        var output = contratMobileMapper.toContractMobileList(contracts);
+        log.info("End service searchContracts: total={}", output.size());
+        return output;
+    }
+
+private Long getMaxId(List<ContratMobile> contracts) {
+        return contracts.stream()
+                .map(ContratMobile::getId)
+                .filter(Objects::nonNull)
+                .max(Long::compareTo)
+                .orElse(0L);
+    }
+
+    private void setIdsForContractsWithNullIds(Long startId, List<ContratMobile> contracts) {
+        long id = startId + 1;
+        for (ContratMobile c : contracts) {
+            if (c.getId() == null) {
+                c.setId(id++);
+            }
+        }
+    }
+
+public class ContratMobile {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID")
+    private Long id;
+
+    @Column(name = "TYPEPRODUIT", length = 40)
+    private String typeProduit;
+
+    @Column(name = "NUMCAT")
+    private Integer numCat;
+
+    @Column(name = "LIBNUMCAT", length = 70)
+    private String libNumCat;
+
+    @Column(name = "AGCE", length = 5)
+    private String agce;
+
+    @Column(name = "LIBAGCE", length = 40)
+    private String libAgce;
+
+    @Column(name = "NUMCPT", length = 24)
+    private String numCpt;
+
+    @Column(name = "NADH", length = 20)
+    private String nadh;
+
+    @Column(name = "DATESOUS")
+    private LocalDate dateSous;
+
+    @Column(name = "STATCTR", length = 20)
+    private String statCtr;
+
+    @Column(name = "LIBSTATCTR", length = 40)
+    private String libStatCtr;
+
+    @Column(name = "DATE_ANNUL")
+    private LocalDate dateAnnul;
+
+    @Column(name = "NOMPSOUS", length = 90)
+    private String nomPsous;
+
+    @Column(name = "DNSOUS")
+    private LocalDate dnSous;
+
+    @Column(name = "FREQ", length = 1)
+    private String freq;
+
+    @Column(name = "GAROPT", length = 1)
+    private String garOpt;
+
+    @Column(name = "MTDERVL", precision = 12)
+    private Double mtDervl;
+
+    @Column(name = "DATEDVL")
+    private LocalDate dateDvl;
+
+    @Column(name = "MTCOT", precision = 12)
+    private Double mtCot;
+
+    @Column(name = "CUMVP", precision = 12)
+    private Double cumVp;
+
+    @Column(name = "MTENCOUR", precision = 12)
+    private Double mtEncour;
+
+    @Column(name = "DATENCOU")
+    private LocalDate dateEncou;
+
+    @Column(name = "MTRACHP", precision = 12)
+    private Double mtRachp;
+
+    @Column(name = "MTAVCE", precision = 12)
+    private Double mtAvce;
+
+    @Column(name = "GARCOMPL", length = 1)
+    private String garCompl;
+
+    @Column(name = "GARCHOIX", length = 20)
+    private String garChoix;
+
+    @Column(name = "IJ", length = 1)
+    private String ij;
+
+    @Column(name = "MTIJ", precision = 12)
+    private Double mtIj;
+
+    @Column(name = "NPASS1", length = 70)
+    private String npAss1;
+
+    @Column(name = "DNASS1")
+    private LocalDate dnAss1;
+
+    @Column(name = "LNASS1", length = 1)
+    private String lnAss1;
+
+    @Column(name = "PRIMEASS1", precision = 12)
+    private Double primeAss1;
+
+    @Column(name = "NPASS2", length = 70)
+    private String npAss2;
+
+    @Column(name = "DNASS2")
+    private LocalDate dnAss2;
+
+    @Column(name = "LNASS2", length = 1)
+    private String lnAss2;
+
+    @Column(name = "PRIMEASS2", precision = 12)
+    private Double primeAss2;
+
+    @Column(name = "NPASS3", length = 70)
+    private String npAss3;
+
+    @Column(name = "DNASS3")
+    private LocalDate dnAss3;
+
+    @Column(name = "LNASS3", length = 1)
+    private String lnAss3;
+
+    @Column(name = "PRIMEASS3", precision = 12)
+    private Double primeAss3;
+
+    @Column(name = "NPASS4", length = 70)
+    private String npAss4;
+
+    @Column(name = "DNASS4")
+    private LocalDate dnAss4;
+
+    @Column(name = "LNASS4", length = 1)
+    private String lnAss4;
+
+    @Column(name = "PRIMEASS4", precision = 12)
+    private Double primeAss4;
+
+    @Column(name = "NPASS5", length = 70)
+    private String npAss5;
+
+    @Column(name = "DNASS5")
+    private LocalDate dnAss5;
+
+    @Column(name = "LNASS5", length = 1)
+    private String lnAss5;
+
+    @Column(name = "PRIMEASS5", precision = 12)
+    private Double primeAss5;
+
+    @Column(name = "NPASS6", length = 70)
+    private String npAss6;
+
+    @Column(name = "DNASS6")
+    private LocalDate dnAss6;
+
+    @Column(name = "LNASS6", length = 1)
+    private String lnAss6;
+
+    @Column(name = "PRIMEASS6", precision = 12)
+    private Double primeAss6;
+
+    @Column(name = "NPASS7", length = 70)
+    private String npAss7;
+
+    @Column(name = "DNASS7")
+    private LocalDate dnAss7;
+
+    @Column(name = "LNASS7", length = 1)
+    private String lnAss7;
+
+    @Column(name = "PRIMEASS7", precision = 12)
+    private Double primeAss7;
+
+    @Column(name = "NPASS8", length = 70)
+    private String npAss8;
+
+    @Column(name = "DNASS8")
+    private LocalDate dnAss8;
+
+    @Column(name = "LNASS8", length = 1)
+    private String lnAss8;
+
+    @Column(name = "PRIMEASS8", precision = 12)
+    private Double primeAss8;
+
+    @Column(name = "CAPITAL", precision = 15)
+    private Double capital;
+
+    @Column(name = "PPIPPO", length = 20)
+    private String ppippo;
+
+    @Column(name = "DATERACH")
+    private LocalDate dateRach;
+
+    @Column(name = "DATEAVCE")
+    private LocalDate dateAvce;
+
+    @Column(name = "ID_LOGIN")
+    private Long idLogin;
+
+    @Column(name = "CIN", length = 20)
+    private String cin;
+
+    @Column(name = "NUM_TEL", length = 20)
+    private String numTel;
+
+    @Column(name = "CLBENEF1", length = 80)
+    private String clBenef1;
+
+    @Column(name = "CLBENEF2", length = 80)
+    private String clBenef2;
+
+    @Column(name = "CLBENEF3", length = 80)
+    private String clBenef3;
+
+    @Column(name = "PER_EMAIL", length = 50)
+    private String perEmail;
+
+    @Column(name = "NTSMT")
+    private Integer ntsmt;
+
+    @Column(name = "NBRACHAT")
+    private Integer nbRachat;
+
+    @Column(name = "DEFNTSM")
+    private LocalDate defNtsm;
+
+    @Column(name = "DATEEXPIRATION")
+    private LocalDate dateExpiration;
+
+    @Column(name = "MINVERSLIBRE", precision = 12)
+    private Double minVersLibre;
+
+    @Column(name = "MINVERSPROGM", precision = 12)
+    private Double minVersProgm;
+
+    @Column(name = "MINVERSPROGT", precision = 12)
+    private Double minVersProgt;
+
+    @Column(name = "MINVERSPROGA", precision = 12)
+    private Double minVersProga;
+
+    @Column(name = "CODE_CLT_SGMA")
+    private Long codeCltSgma;
+
+    @Column(name = "CONTRACTANTE", length = 40)
+    private String contractante;
+
+    @Column(name = "MATRICULE")
+    private Long matricule;
+
+    @Column(name = "MNTPARTSALARIE", precision = 15)
+    private Double mntPartSalarie;
+
+    @Column(name = "MNTPARTPATRON", precision = 15)
+    private Double mntPartPatron;
+
+    @Column(name = "MNTPREMIERVERSEMENT")
+    private Double mntPremierVersement;
+}
