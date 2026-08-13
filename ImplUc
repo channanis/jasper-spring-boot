@@ -1,0 +1,107 @@
+public interface ContratMobileSearchProjection {
+    String getTypeProduit();
+    Integer getNumCat();
+    String getLibNumCat();
+    String getAgce();
+    String getLibAgce();
+    String getNumCpt();
+    String getNadh();
+    LocalDate getDateSous();
+    String getStatCtr();
+    String getLibStatCtr();
+    String getCin();
+    String getNumTel();
+    String getPerEmail();
+    String getNomPsous();
+    LocalDate getDnSous();
+    Double getMtEncour();
+    LocalDate getDateEncou();
+    Integer getNtsmt();
+    Double getCumVp();
+    Double getMtRachp();
+    LocalDate getDateRach();
+    Integer getNbRachat();
+    Double getMtAvce();
+    LocalDate getDateAvce();
+    Long getCodeCltSgma();
+    Double getMinVersLibre();
+    Double getMinVersProgm();
+    Double getMinVersProgt();
+    Double getMinVersProga();
+}
+
+public interface ContratMobileSearchRepository extends Repository<ContratMobile, Long> {
+
+    @Query(value = """
+        SELECT
+            CAST(NULL AS VARCHAR2(40)) AS typeProduit, -- computed in Java from gr.code_produit, see typeproduit() logic
+            gr.code_produit                                        AS numCat,
+            b.libelle_client                                       AS libNumCat,
+            LPAD(gr.code_agence, 3, '0')                           AS agce,
+            gr.libelle_agence                                      AS libAgce,
+            gr.n_compte_bancaire_pp                                AS numCpt,
+            gr.n__adhesion_n_contrat                                AS nadh,
+            gr.date_effet_du_contrat                                AS dateSous,
+            DECODE(gr.status_cod, 'INF', '1', 'SUS', '2', '0')     AS statCtr,
+            gr.status_cod                                          AS libStatCtr,
+            REPLACE(REPLACE(UPPER(gr.n_cin), ' ', ''), '.', '')    AS cin,
+            TRIM(gr.num_tel_mobil)                                  AS numTel,
+            TRIM(gr.per_email_mobil)                                AS perEmail,
+            NVL(TRIM(gr.nom_de_adherent), ' ') || ' ' || NVL(TRIM(gr.prenom_de_adherent), ' ') AS nomPsous,
+            gr.date_naissance                                      AS dnSous,
+            a.pm                                                    AS mtEncour,
+            a.pm_saving_effec_dte                                   AS dateEncou,
+            DECODE(gr.ntsmt, 'O', 1, 0)                            AS ntsmt,
+            (SELECT SUM(v.fnd_inv_div_com_mnt) FROM v_grc_tot_prime v
+              WHERE v.contract_num = gr.n__adhesion_n_contrat AND v.ref_product_id = gr.code_produit) AS cumVp,
+            (SELECT SUM(v.fnd_inv_div_net_mnt) FROM v_grc_tot_rt v
+              WHERE v.contract_num = gr.n__adhesion_n_contrat AND v.ref_product_id = gr.code_produit) AS mtRachp,
+            (SELECT MAX(v.effec_dte) FROM v_grc_tot_rt v
+              WHERE v.contract_num = gr.n__adhesion_n_contrat AND v.ref_product_id = gr.code_produit) AS dateRach,
+            (SELECT COUNT(1) FROM v_grc_tot_rt v
+              WHERE v.contract_num = gr.n__adhesion_n_contrat AND v.ref_product_id = gr.code_produit) AS nbRachat,
+            a.avance_ttc                                            AS mtAvce,
+            (SELECT MAX(v.dateoctr) FROM v_grc_tot_av v
+              WHERE v.adherent = gr.n__adhesion_n_contrat AND v.categorie = gr.code_produit) AS dateAvce,
+            gr.code_clt_sgma                                        AS codeCltSgma,
+            a.minverslibre                                          AS minVersLibre,
+            a.minversprogm                                          AS minVersProgm,
+            a.minversprogt                                          AS minVersProgt,
+            a.minversproga                                          AS minVersProga
+        FROM iia.v_grc_globale_personne_mobile gr
+        LEFT JOIN iia.v_pm_dh_support a
+               ON a.cat = gr.code_produit AND a.nadhes = gr.n__adhesion_n_contrat
+        JOIN categori b ON gr.code_produit = b.numcat
+        LEFT JOIN categ_vers_mobil cvm ON gr.code_produit = cvm.numcat
+        WHERE UPPER(TRIM(gr.status_cod)) NOT IN ('DBO','CLO')
+          AND gr.code_produit <> 205
+          AND (:cin IS NULL OR REPLACE(REPLACE(UPPER(gr.n_cin), ' ', ''), '.', '') = :cin)
+          AND (:numCat IS NULL OR gr.code_produit = :numCat)
+          AND (:nadh IS NULL OR gr.n__adhesion_n_contrat = :nadh)
+        """, nativeQuery = true)
+    List<ContratMobileSearchProjection> searchContrat(
+        @Param("cin") String cin,
+        @Param("numCat") Integer numCat,
+        @Param("nadh") String nadh
+    );
+}
+
+@Mapper(componentModel = "spring")
+public interface ContratMobileSearchMapper {
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "typeProduit", expression = "java(TypeProduitResolver.resolve(p.getNumCat()))")
+    ContratMobile toContratMobile(ContratMobileSearchProjection p);
+
+    List<ContratMobile> toContratMobileList(List<ContratMobileSearchProjection> projections);
+}
+@Override
+public ContratMobile getcontratDetail(String cin, Integer numCat, String nadh, Long matricule) {
+    List<ContratMobileSearchProjection> results =
+        contratMobileSearchRepository.searchContrat(cin, numCat, nadh);
+    return results.stream()
+        .findFirst()
+        .map(contratMobileSearchMapper::toContratMobile)
+        .orElse(null);
+}
+
