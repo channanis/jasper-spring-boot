@@ -1,107 +1,934 @@
-public interface ContratMobileSearchProjection {
-    String getTypeProduit();
-    Integer getNumCat();
-    String getLibNumCat();
-    String getAgce();
-    String getLibAgce();
-    String getNumCpt();
-    String getNadh();
-    LocalDate getDateSous();
-    String getStatCtr();
-    String getLibStatCtr();
-    String getCin();
-    String getNumTel();
-    String getPerEmail();
-    String getNomPsous();
-    LocalDate getDnSous();
-    Double getMtEncour();
-    LocalDate getDateEncou();
-    Integer getNtsmt();
-    Double getCumVp();
-    Double getMtRachp();
-    LocalDate getDateRach();
-    Integer getNbRachat();
-    Double getMtAvce();
-    LocalDate getDateAvce();
-    Long getCodeCltSgma();
-    Double getMinVersLibre();
-    Double getMinVersProgm();
-    Double getMinVersProgt();
-    Double getMinVersProga();
+create table BASE
+(
+    NUMBAS                NUMBER(10) not null
+        constraint BY_NUMBAS4BASE
+            primary key
+        constraint FK_BASE
+            references BENEFIC,
+    NUMCAT                NUMBER(3)
+        constraint FK_BASEBY_NUMCAT
+            references CATEGORI,
+    NUMAGT                NUMBER(5)
+        constraint FK_BASEBY_NUMAGT7
+            references AGENT,
+    AGTRESEA              NUMBER(5),
+    NUMASS                NUMBER(10)
+        constraint FK_BASEBY_ASSBAS2
+            references ASSURE,
+    NUMCTR                NUMBER(10)
+        constraint FK_BASEBY_CTRBAS2
+            references CONTRACT,
+    NUMPROJET             NUMBER(10),
+    MODPBAS               CHAR
+        constraint CK_BASE1
+            check ("MODPBAS" IN ('A', 'S', 'T', 'M', 'F', 'U')),
+    ATERMBAS              NUMBER(3),
+    DEFFBAS               DATE   default (SYSDATE),
+    DAECHEAN              DATE,
+    DEMISSIO              DATE   default (SYSDATE),
+    DAEXPIRA              DATE,
+    DURGARAN              NUMBER(3),
+    DURVERS               NUMBER(3),
+    CAPBAS                NUMBER,
+    CAPVIE                NUMBER,
+    PRIMEBAS              NUMBER,
+    PINVBAS               NUMBER,
+    DAEXPINV              DATE,
+    QPABAS                NUMBER,
+    FRANCHBAS             NUMBER(5),
+    CAPMPA                NUMBER,
+    PRINVMPA              NUMBER,
+    PRMPADEC              NUMBER,
+    DAEXPIMPA             DATE,
+    CAPMPC                NUMBER,
+    PRINVMPC              NUMBER,
+    DURMPCBAS             NUMBER(3),
+    PRIMPR                NUMBER,
+    PRINVMPR              NUMBER,
+    RENTEMPR              NUMBER,
+    DURMPR                NUMBER(3),
+    PRIMPC                NUMBER,
+    SURPRIDEC             NUMBER,
+    SURPRIINV             NUMBER,
+    SURPRIACC             NUMBER,
+    SALANN                NUMBER,
+    PPI                   NUMBER,
+    PUI                   NUMBER,
+    TAXEBAS               NUMBER,
+    FPFBAS                NUMBER,
+    RENTEINV              NUMBER,
+    RENTEINC              NUMBER,
+    PRCHARG               NUMBER,
+    RENTUNIV              NUMBER,
+    PRILIB                NUMBER,
+    PRIRENUNIV            NUMBER,
+    RENTE06               NUMBER,
+    DURENTE06             NUMBER(3)
+        constraint CK_BASE2
+            check ("DURENTE06" IN (10, 15, 20, 25)),
+    NUCPTBAN              CHAR(24),
+    DATANNUL              DATE,
+    NUMANNUL              CHAR(15),
+    TYPEANNU              NUMBER(3),
+    MOTIF                 NUMBER(5),
+    TARMED26              CHAR(20),
+    CODERES               CHAR,
+    DASUSPEN              DATE,
+    DSUSPAVT              DATE,
+    DALETSUS              DATE,
+    MAJAT70               NUMBER(3),
+    NOMUSE                CHAR(50),
+    DASYST                DATE,
+    EXNUMBAS              CHAR(20),
+    CODEETAT              CHAR   default ('P')
+        constraint CK_BASE3
+            check ("CODEETAT" IN ('A', 'P', 'V', 'E', 'I')),
+    MPA                   NUMBER(3),
+    INV                   NUMBER(3),
+    VIR                   CHAR
+        constraint CK_BASE4
+            check ("VIR" IN ('P', 'N')),
+    FRAIVIR               NUMBER(3),
+    VISMED                CHAR
+        constraint CK_BASE5
+            check ("VISMED" IN ('O', 'N')),
+    NIV                   NUMBER(3),
+    BAREME                CHAR(10)
+        constraint CK_BASE6
+            check ("BAREME" IN ('NORMAL', 'SPECIAL')),
+    NUMDELEG              NUMBER(3),
+    TAUREM                NUMBER(3),
+    CREDIT                NUMBER,
+    MENSUALI              NUMBER,
+    NBRMOIS               NUMBER(3),
+    CODLIBPR              CHAR
+        constraint CK_BASE7
+            check ("CODLIBPR" IN ('O', 'N')),
+    AGETER75              NUMBER(3),
+    DUREE70               NUMBER(3),
+    DUREE75               NUMBER(3),
+    DATMALUS              DATE,
+    ANCDEFF               DATE,
+    CODDEROG              CHAR,
+    CODVALRACH            CHAR,
+    DATREDUCT             DATE,
+    DATEFFTRANSF          DATE,
+    PROCHECHEANC          DATE,
+    DATVERSLIBR           DATE,
+    VERSLIBR              CHAR(2),
+    ANCPOLICE             CHAR(10),
+    NUMAGTANC             NUMBER,
+    DEDFISC               CHAR(3),
+    DATRECTV              DATE,
+    MTFREACT              NUMBER(15, 2),
+    DELEGADE              CHAR(3),
+    EDP                   VARCHAR2(3),
+    NANTISSEMENT          CHAR,
+    DATEEFFETNANTISSEMENT DATE,
+    EXCLUSION             VARCHAR2(200),
+    MISEENGAGE            VARCHAR2(30),
+    DATEMISEENGAGE        DATE,
+    GARDECESACC           NUMBER(1),
+    PRIMEDECESACC         NUMBER,
+    GARIPT                NUMBER(1),
+    PRIMEIPT              NUMBER,
+    GARMALADRED           NUMBER(1),
+    PRIMEMALADRED         NUMBER,
+    DATPRENCAIS           DATE,
+    BENEFICIARESMEG       VARCHAR2(200),
+    DATEEFFETMEG          DATE,
+    DEROG_COM             VARCHAR2(3),
+    DT_DEROG_COM          DATE,
+    TYP_CLI               VARCHAR2(10),
+    TX_ACQ                NUMBER,
+    TX_DEROG              NUMBER,
+    DERGCOM               NUMBER default 0,
+    TVAAV                 NUMBER,
+    ICAV_TTC              NUMBER,
+    MTAVANCE_TTC          NUMBER,
+    PRIME_325             NUMBER,
+    PRIME_450             NUMBER,
+    PRIME_TMGA            NUMBER,
+    NUMCAT_TR             NUMBER(3),
+    NUMBAS_TR             NUMBER(10),
+    MATRICULE_TR          NUMBER(10),
+    DT_CALCULE_TR         DATE,
+    DT_EFFET_TR           DATE,
+    ADOSSEAUPRET          NUMBER(3),
+    PRIME_TOTALE_HT       NUMBER,
+    TAXE_TOTALE           NUMBER,
+    PRIME_TOTALE_TTC      NUMBER,
+    GENERATION            VARCHAR2(3),
+    REPORT_PRELEV         CHAR,
+    CODE_GEST             VARCHAR2(30),
+    CODEG_AGENCE_GEST     VARCHAR2(5),
+    CODE_MARCHE           VARCHAR2(30),
+    CODE_CLT_SG           NUMBER,
+    SYNCHRO               NUMBER(1),
+    LIBELLE_ERREUR        VARCHAR2(200),
+    CODE_CLT_SGMA         NUMBER,
+    IS_GENERATED          NUMBER,
+    constraint BY_CATBAS2BASE
+        unique (NUMCAT, NUMBAS),
+    constraint BY_CODBAS2BASE
+        unique (CODEETAT, NUMBAS),
+    constraint BY_CTRASSBAS2BASE
+        unique (NUMCTR, NUMASS, NUMBAS),
+    constraint FK_BASEBY_NUMCTRASS
+        foreign key (NUMASS, NUMCTR) references CONASS ()
+)
+/
+
+-- auto-generated definition
+create table ASSURE
+(
+    NUMASS              NUMBER(10) not null
+        constraint BY_NUMASS2ASSURE
+            primary key,
+    TNOMASS             CHAR(4)
+        constraint CK_ASSURE1
+            check ("TNOMASS" IN (' ', 'MR', 'MME', 'MLLE', 'ME', 'DR', 'PR')),
+    NOMASS              CHAR(40),
+    PREASS              CHAR(40),
+    DNAISASS            DATE,
+    ADR1ASS             CHAR(40),
+    ADR2ASS             CHAR(40),
+    NUMVIL              NUMBER(5),
+    IND1ASS             NUMBER(3),
+    TEL1ASS             NUMBER(10),
+    ANCTEL1             CHAR(12),
+    ANCTEL2             CHAR(12),
+    IND2ASS             NUMBER(3),
+    TEL2ASS             NUMBER(10),
+    INDFAASS            NUMBER(3),
+    FAXASS              NUMBER(10),
+    EMAILASS            CHAR(50),
+    SFAMASS             CHAR
+        constraint CK_ASSURE2
+            check ("SFAMASS" IN ('C', 'M', 'D', 'V')),
+    SEXEASS             CHAR
+        constraint CK_ASSURE3
+            check ("SEXEASS" IN ('M', 'F')),
+    VIPASS              CHAR
+        constraint CK_ASSURE4
+            check ("VIPASS" IN ('O', 'N')),
+    NUMEXIST            NUMBER(10),
+    CODEENVOI           CHAR
+        constraint CK_ASSURE5
+            check ("CODEENVOI" IN ('ASSURE', 'CONTRACTANT')),
+    CIN                 CHAR(12),
+    PER_EMAIL_MOBIL     VARCHAR2(50),
+    NUM_TEL_MOBIL       VARCHAR2(20),
+    ADRCIN              CHAR(40),
+    ADRCINST            CHAR(40),
+    ORGFOND             CHAR(50),
+    RC                  CHAR(50),
+    NOM_CONTRACTANTE    VARCHAR2(100),
+    PPE                 VARCHAR2(200),
+    ABC                 VARCHAR2(200),
+    SE                  VARCHAR2(200),
+    INDICE_US           VARCHAR2(200),
+    TYPE_INDICE         VARCHAR2(200),
+    TIN                 NUMBER,
+    DATE_SIGN_AUTO_CERT DATE,
+    DATE_REM_AUTO_CERT  DATE,
+    STATUT_FATCA        VARCHAR2(200),
+    DATE_STATUT_FATCA   DATE,
+    GEL_AVOIR           VARCHAR2(200),
+    DATE_EXP_AUTO_CERT  DATE
+)
+/
+
+create table CATEGORI
+(
+    NUMCAT                NUMBER(4) not null
+        constraint BY_NUMCAT2CATEGORI
+            primary key,
+    LIBELLE               CHAR(70),
+    TYP                   CHAR
+        constraint CK_CATEGORI1
+            check ("TYP" IN ('A', 'B', 'I', 'G')),
+    VENDU                 CHAR
+        constraint CK_CATEGORI2
+            check ("VENDU" IN ('O', 'N')),
+    AGELISOUS             NUMBER(3),
+    AGETEMAX              NUMBER(3),
+    DUMINIM               NUMBER(3),
+    OBLICAT               CHAR(6),
+    VIE                   CHAR,
+    RISQUE                NUMBER(3),
+    COMPTE_BANQUE         VARCHAR2(24),
+    LIB_BANQUE_ENTETE     VARCHAR2(40),
+    NOM_FICHIER_ENVOI     VARCHAR2(40),
+    NOM_FICHIER_RETOUR    VARCHAR2(40),
+    CHEMIN_FICHIER_ENVOI  VARCHAR2(100),
+    CHEMIN_FICHIER_RETOUR VARCHAR2(100),
+    GAMME_ID              NUMBER(10),
+    LIB_BANQUE_LIGNE      VARCHAR2(40),
+    CATDAPS               NUMBER(3),
+    VIRISQ                VARCHAR2(10),
+    TAUX_CHAQUIS          NUMBER(15, 2),
+    TAUX_CHARGEST         NUMBER(15, 2),
+    LIBELLE_CLIENT        VARCHAR2(80),
+    TYPPROD               CHAR
+)
+/
+
+@Entity
+@Table(name = "TABLECRM")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ContratMobile {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID")
+    private Long id;
+
+    @Column(name = "TYPEPRODUIT", length = 40)
+    private String typeProduit;
+
+    @Column(name = "NUMCAT")
+    private Integer numCat;
+
+    @Column(name = "LIBNUMCAT", length = 70)
+    private String libNumCat;
+
+    @Column(name = "AGCE", length = 5)
+    private String agce;
+
+    @Column(name = "LIBAGCE", length = 40)
+    private String libAgce;
+
+    @Column(name = "NUMCPT", length = 24)
+    private String numCpt;
+
+    @Column(name = "NADH", length = 20)
+    private String nadh;
+
+    @Column(name = "DATESOUS")
+    private LocalDate dateSous;
+
+    @Column(name = "STATCTR", length = 20)
+    private String statCtr;
+
+    @Column(name = "LIBSTATCTR", length = 40)
+    private String libStatCtr;
+
+    @Column(name = "DATE_ANNUL")
+    private LocalDate dateAnnul;
+
+    @Column(name = "NOMPSOUS", length = 90)
+    private String nomPsous;
+
+    @Column(name = "DNSOUS")
+    private LocalDate dnSous;
+
+    @Column(name = "FREQ", length = 1)
+    private String freq;
+
+    @Column(name = "GAROPT", length = 1)
+    private String garOpt;
+
+    @Column(name = "MTDERVL", precision = 12)
+    private Double mtDervl;
+
+    @Column(name = "DATEDVL")
+    private LocalDate dateDvl;
+
+    @Column(name = "MTCOT", precision = 12)
+    private Double mtCot;
+
+    @Column(name = "CUMVP", precision = 12)
+    private Double cumVp;
+
+    @Column(name = "MTENCOUR", precision = 12)
+    private Double mtEncour;
+
+    @Column(name = "DATENCOU")
+    private LocalDate dateEncou;
+
+    @Column(name = "MTRACHP", precision = 12)
+    private Double mtRachp;
+
+    @Column(name = "MTAVCE", precision = 12)
+    private Double mtAvce;
+
+    @Column(name = "GARCOMPL", length = 1)
+    private String garCompl;
+
+    @Column(name = "GARCHOIX", length = 20)
+    private String garChoix;
+
+    @Column(name = "IJ", length = 1)
+    private String ij;
+
+    @Column(name = "MTIJ", precision = 12)
+    private Double mtIj;
+
+    @Column(name = "NPASS1", length = 70)
+    private String npAss1;
+
+    @Column(name = "DNASS1")
+    private LocalDate dnAss1;
+
+    @Column(name = "LNASS1", length = 1)
+    private String lnAss1;
+
+    @Column(name = "PRIMEASS1", precision = 12)
+    private Double primeAss1;
+
+    @Column(name = "NPASS2", length = 70)
+    private String npAss2;
+
+    @Column(name = "DNASS2")
+    private LocalDate dnAss2;
+
+    @Column(name = "LNASS2", length = 1)
+    private String lnAss2;
+
+    @Column(name = "PRIMEASS2", precision = 12)
+    private Double primeAss2;
+
+    @Column(name = "NPASS3", length = 70)
+    private String npAss3;
+
+    @Column(name = "DNASS3")
+    private LocalDate dnAss3;
+
+    @Column(name = "LNASS3", length = 1)
+    private String lnAss3;
+
+    @Column(name = "PRIMEASS3", precision = 12)
+    private Double primeAss3;
+
+    @Column(name = "NPASS4", length = 70)
+    private String npAss4;
+
+    @Column(name = "DNASS4")
+    private LocalDate dnAss4;
+
+    @Column(name = "LNASS4", length = 1)
+    private String lnAss4;
+
+    @Column(name = "PRIMEASS4", precision = 12)
+    private Double primeAss4;
+
+    @Column(name = "NPASS5", length = 70)
+    private String npAss5;
+
+    @Column(name = "DNASS5")
+    private LocalDate dnAss5;
+
+    @Column(name = "LNASS5", length = 1)
+    private String lnAss5;
+
+    @Column(name = "PRIMEASS5", precision = 12)
+    private Double primeAss5;
+
+    @Column(name = "NPASS6", length = 70)
+    private String npAss6;
+
+    @Column(name = "DNASS6")
+    private LocalDate dnAss6;
+
+    @Column(name = "LNASS6", length = 1)
+    private String lnAss6;
+
+    @Column(name = "PRIMEASS6", precision = 12)
+    private Double primeAss6;
+
+    @Column(name = "NPASS7", length = 70)
+    private String npAss7;
+
+    @Column(name = "DNASS7")
+    private LocalDate dnAss7;
+
+    @Column(name = "LNASS7", length = 1)
+    private String lnAss7;
+
+    @Column(name = "PRIMEASS7", precision = 12)
+    private Double primeAss7;
+
+    @Column(name = "NPASS8", length = 70)
+    private String npAss8;
+
+    @Column(name = "DNASS8")
+    private LocalDate dnAss8;
+
+    @Column(name = "LNASS8", length = 1)
+    private String lnAss8;
+
+    @Column(name = "PRIMEASS8", precision = 12)
+    private Double primeAss8;
+
+    @Column(name = "CAPITAL", precision = 15)
+    private Double capital;
+
+    @Column(name = "PPIPPO", length = 20)
+    private String ppippo;
+
+    @Column(name = "DATERACH")
+    private LocalDate dateRach;
+
+    @Column(name = "DATEAVCE")
+    private LocalDate dateAvce;
+
+    @Column(name = "ID_LOGIN")
+    private Long idLogin;
+
+    @Column(name = "CIN", length = 20)
+    private String cin;
+
+    @Column(name = "NUM_TEL", length = 20)
+    private String numTel;
+
+    @Column(name = "CLBENEF1", length = 80)
+    private String clBenef1;
+
+    @Column(name = "CLBENEF2", length = 80)
+    private String clBenef2;
+
+    @Column(name = "CLBENEF3", length = 80)
+    private String clBenef3;
+
+    @Column(name = "PER_EMAIL", length = 50)
+    private String perEmail;
+
+    @Column(name = "NTSMT")
+    private Integer ntsmt;
+
+    @Column(name = "NBRACHAT")
+    private Integer nbRachat;
+
+    @Column(name = "DEFNTSM")
+    private LocalDate defNtsm;
+
+    @Column(name = "DATEEXPIRATION")
+    private LocalDate dateExpiration;
+
+    @Column(name = "MINVERSLIBRE", precision = 12)
+    private Double minVersLibre;
+
+    @Column(name = "MINVERSPROGM", precision = 12)
+    private Double minVersProgm;
+
+    @Column(name = "MINVERSPROGT", precision = 12)
+    private Double minVersProgt;
+
+    @Column(name = "MINVERSPROGA", precision = 12)
+    private Double minVersProga;
+
+    @Column(name = "CODE_CLT_SGMA")
+    private Long codeCltSgma;
+
+    @Column(name = "CONTRACTANTE", length = 40)
+    private String contractante;
+
+    @Column(name = "MATRICULE")
+    private Long matricule;
+
+    @Column(name = "MNTPARTSALARIE", precision = 15)
+    private Double mntPartSalarie;
+
+    @Column(name = "MNTPARTPATRON", precision = 15)
+    private Double mntPartPatron;
+
+    @Column(name = "MNTPREMIERVERSEMENT")
+    private Double mntPremierVersement;
 }
 
-public interface ContratMobileSearchRepository extends Repository<ContratMobile, Long> {
 
-    @Query(value = """
-        SELECT
-            CAST(NULL AS VARCHAR2(40)) AS typeProduit, -- computed in Java from gr.code_produit, see typeproduit() logic
-            gr.code_produit                                        AS numCat,
-            b.libelle_client                                       AS libNumCat,
-            LPAD(gr.code_agence, 3, '0')                           AS agce,
-            gr.libelle_agence                                      AS libAgce,
-            gr.n_compte_bancaire_pp                                AS numCpt,
-            gr.n__adhesion_n_contrat                                AS nadh,
-            gr.date_effet_du_contrat                                AS dateSous,
-            DECODE(gr.status_cod, 'INF', '1', 'SUS', '2', '0')     AS statCtr,
-            gr.status_cod                                          AS libStatCtr,
-            REPLACE(REPLACE(UPPER(gr.n_cin), ' ', ''), '.', '')    AS cin,
-            TRIM(gr.num_tel_mobil)                                  AS numTel,
-            TRIM(gr.per_email_mobil)                                AS perEmail,
-            NVL(TRIM(gr.nom_de_adherent), ' ') || ' ' || NVL(TRIM(gr.prenom_de_adherent), ' ') AS nomPsous,
-            gr.date_naissance                                      AS dnSous,
-            a.pm                                                    AS mtEncour,
-            a.pm_saving_effec_dte                                   AS dateEncou,
-            DECODE(gr.ntsmt, 'O', 1, 0)                            AS ntsmt,
-            (SELECT SUM(v.fnd_inv_div_com_mnt) FROM v_grc_tot_prime v
-              WHERE v.contract_num = gr.n__adhesion_n_contrat AND v.ref_product_id = gr.code_produit) AS cumVp,
-            (SELECT SUM(v.fnd_inv_div_net_mnt) FROM v_grc_tot_rt v
-              WHERE v.contract_num = gr.n__adhesion_n_contrat AND v.ref_product_id = gr.code_produit) AS mtRachp,
-            (SELECT MAX(v.effec_dte) FROM v_grc_tot_rt v
-              WHERE v.contract_num = gr.n__adhesion_n_contrat AND v.ref_product_id = gr.code_produit) AS dateRach,
-            (SELECT COUNT(1) FROM v_grc_tot_rt v
-              WHERE v.contract_num = gr.n__adhesion_n_contrat AND v.ref_product_id = gr.code_produit) AS nbRachat,
-            a.avance_ttc                                            AS mtAvce,
-            (SELECT MAX(v.dateoctr) FROM v_grc_tot_av v
-              WHERE v.adherent = gr.n__adhesion_n_contrat AND v.categorie = gr.code_produit) AS dateAvce,
-            gr.code_clt_sgma                                        AS codeCltSgma,
-            a.minverslibre                                          AS minVersLibre,
-            a.minversprogm                                          AS minVersProgm,
-            a.minversprogt                                          AS minVersProgt,
-            a.minversproga                                          AS minVersProga
-        FROM iia.v_grc_globale_personne_mobile gr
-        LEFT JOIN iia.v_pm_dh_support a
-               ON a.cat = gr.code_produit AND a.nadhes = gr.n__adhesion_n_contrat
-        JOIN categori b ON gr.code_produit = b.numcat
-        LEFT JOIN categ_vers_mobil cvm ON gr.code_produit = cvm.numcat
-        WHERE UPPER(TRIM(gr.status_cod)) NOT IN ('DBO','CLO')
-          AND gr.code_produit <> 205
-          AND (:cin IS NULL OR REPLACE(REPLACE(UPPER(gr.n_cin), ' ', ''), '.', '') = :cin)
-          AND (:numCat IS NULL OR gr.code_produit = :numCat)
-          AND (:nadh IS NULL OR gr.n__adhesion_n_contrat = :nadh)
-        """, nativeQuery = true)
-    List<ContratMobileSearchProjection> searchContrat(
-        @Param("cin") String cin,
-        @Param("numCat") Integer numCat,
-        @Param("nadh") String nadh
-    );
-}
 
-@Mapper(componentModel = "spring")
-public interface ContratMobileSearchMapper {
+PROCEDURE proc_tabcrm_ind
+    IS
+        r_tablecrm             tablecrm%ROWTYPE;
+        r_tablecrm_null        tablecrm%ROWTYPE;
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "typeProduit", expression = "java(TypeProduitResolver.resolve(p.getNumCat()))")
-    ContratMobile toContratMobile(ContratMobileSearchProjection p);
+        r_crm_sinistre         crm_sinistre%ROWTYPE;
+        r_crm_sinistre_null    crm_sinistre%ROWTYPE;
 
-    List<ContratMobile> toContratMobileList(List<ContratMobileSearchProjection> projections);
-}
-@Override
-public ContratMobile getcontratDetail(String cin, Integer numCat, String nadh, Long matricule) {
-    List<ContratMobileSearchProjection> results =
-        contratMobileSearchRepository.searchContrat(cin, numCat, nadh);
-    return results.stream()
-        .findFirst()
-        .map(contratMobileSearchMapper::toContratMobile)
-        .orElse(null);
-}
+        r_crm_versement        crm_versement%ROWTYPE;
+        r_crm_versement_null   crm_versement%ROWTYPE;
 
+
+        wii                    NUMBER;
+    BEGIN
+        FOR i
+            IN (SELECT a.*,
+                       DECODE (modpbas, 'U', '', modpbas)
+                           wfreqpp,
+                       DECODE (modpbas, 'U', 0, ppi)
+                           wmtpp,
+                       c.libelle_client
+                           libelle,
+                       DECODE (a.numcat,  95, a.capbas,  68, a.capbas,  0)
+                           capitalwiqaya,
+                       DECODE (dasuspen, NULL, 1, 2)
+                           wstatctr,
+                       DECODE (dasuspen, NULL, 'VIGUEUR', 'Suspendu')
+                           libelwstatctr,
+                       b.tnomass,
+                       b.nomass,
+                       b.preass,
+                       b.dnaisass,
+                       DECODE (a.numcat,
+                               65, NVL (a.ppi, 0) + NVL (a.pui, 0),
+                               63, NVL (a.ppi, 0) + NVL (a.pui, 0),
+                               primebas)
+                           primecontrat,
+                          TRIM (b.tnomass)
+                       || ' '
+                       || TRIM (b.nomass)
+                       || ' '
+                       || TRIM (b.preass)
+                           nom_prenom,
+                       b.cin --,nvl(trim(b.ind1ass),' ')||nvl(trim(b.tel1ass),' ') tel
+                            ,
+                       b.per_email_mobil,
+                       b.num_tel_mobil,
+                       DECODE (UPPER (TRIM (nantissement)), 'O', 1, 0)
+                           ntsmt
+                FROM base a, assure b, categori c
+                WHERE     a.numass = b.numass
+                      AND a.numcat = c.numcat
+                      --and  a.numcat in (95,65,63,68)
+                      AND a.numcat IN (1,
+                                       2,
+                                       6,
+                                       11,
+                                       15,
+                                       16,
+                                       18,
+                                       19,
+                                       20,
+                                       21,
+                                       22,
+                                       23,
+                                       26,
+                                       27,
+                                       32,
+                                       33,
+                                       34,
+                                       40,
+                                       47,
+                                       48,
+                                       53,
+                                       58,
+                                       60,
+                                       63,
+                                       65,
+                                       68,
+                                       95)
+                      AND deffbas IS NOT NULL
+                      AND datannul IS NULL)
+        LOOP
+            r_tablecrm.numcat := i.numcat;
+            r_tablecrm.libnumcat := i.libelle;
+            r_tablecrm.agce := LPAD (SUBSTR (i.nucptban, 9, 3), 3, '0');
+            r_tablecrm.libagce := '';
+            r_tablecrm.numcpt := TRIM (i.nucptban);                  --I.rip ;
+            r_tablecrm.nadh := i.numbas;
+            r_tablecrm.datesous := i.deffbas;
+            r_tablecrm.statctr := i.wstatctr;
+            r_tablecrm.libstatctr := i.libelwstatctr;
+
+
+            r_tablecrm.date_annul := i.datannul;
+            r_tablecrm.nompsous := i.nom_prenom;
+            r_tablecrm.dnsous := i.dnaisass;
+            r_tablecrm.mtcot := i.primecontrat;
+            r_tablecrm.freq := i.modpbas;
+            r_tablecrm.cin :=
+                REPLACE (REPLACE (UPPER (i.cin), ' ', ''), '.', '');
+            --R_TABLECRM.num_tel:=trim(I.tel);
+            r_tablecrm.num_tel := TRIM (i.num_tel_mobil);
+            r_tablecrm.per_email := TRIM (i.per_email_mobil);
+
+            r_tablecrm.typeproduit := typeproduit (i.numcat);
+
+            r_tablecrm.capital := i.capitalwiqaya;
+            r_tablecrm.ntsmt := i.ntsmt;
+
+            IF i.numcat = 95
+            THEN
+                r_tablecrm.code_clt_sgma := i.code_clt_sgma;
+            END IF;
+
+            IF i.numcat IN (63,
+                            65,
+                            1,
+                            11,
+                            27)
+            THEN
+                --R_TABLECRM.TYPEPRODUIT:='Epargne';
+                FOR j
+                    IN (SELECT *
+                        FROM ppipui a
+                        WHERE     a.numbas = i.numbas
+                              AND dacapital IS NOT NULL
+                              AND datann IS NULL
+                              AND NVL (code, 'X') = 'U')
+                LOOP
+                    IF    j.echeance > r_tablecrm.datedvl
+                       OR r_tablecrm.datedvl IS NULL
+                    THEN
+                        r_tablecrm.datedvl := j.echeance;        --WDATEDVLEnc
+                        r_tablecrm.mtdervl := j.montant;            --WMTVLEnc
+                    END IF;
+                END LOOP;
+
+                BEGIN
+                    SELECT MAX (datcalc)
+                    INTO r_tablecrm.datencou                         --WDATEPM
+                    FROM pmprcl_mobil
+                    WHERE police = i.numbas
+                        AND cat = i.numcat;
+                EXCEPTION
+                    WHEN OTHERS
+                    THEN
+                        r_tablecrm.datencou := NULL;
+                END;
+
+                BEGIN
+                    SELECT SUM (NVL (p.vprimps, 0) + NVL (p.vprimpp, 0)),
+                           SUM (mtavance_ttc)
+                    INTO r_tablecrm.mtencour, r_tablecrm.mtavce       --WVPRIM
+                    FROM pmprcl_mobil p
+                    WHERE     p.police = i.numbas
+                          AND p.datcalc = r_tablecrm.datencou
+                          AND p.cat = i.numcat;
+                EXCEPTION
+                    WHEN OTHERS
+                    THEN
+                        r_tablecrm.mtencour := 0;
+                        r_tablecrm.mtavce := 0;
+                END;
+
+                SELECT SUM (montant)
+                INTO r_tablecrm.cumvp                                 --WCUMVP
+                FROM ppipui a
+                WHERE     a.numbas = i.numbas
+                      AND dacapital IS NOT NULL
+                      AND datann IS NULL         /*and  nvl(code,'X') <> 'U'*/
+                                        ;
+
+                SELECT SUM (mtrach), COUNT (1)
+                INTO r_tablecrm.mtrachp, r_tablecrm.nbrachat            --MTRP
+                FROM rachatpc a
+                WHERE a.police = i.numbas AND TRIM (typ) = 'RP';
+            /*select sum(mtbravce) into R_TABLECRM.MTAVCE --MTAVCE
+            from avancepc a where a.police=I.numbas and typ='A';*/
+
+            END IF;
+
+            IF i.numcat IN (68,
+                            95,
+                            1,
+                            2,
+                            6,
+                            11,
+                            18,
+                            19,
+                            20,
+                            23,
+                            26,
+                            40,
+                            47,
+                            48,
+                            53,
+                            58,
+                            60)
+            THEN
+                --R_TABLECRM.TYPEPRODUIT:='Pr voyance';
+                wii := 0;
+
+                FOR j
+                    IN (SELECT a.*, primettc
+                        FROM famille a, assudans b
+                        WHERE     a.numass = b.numass
+                              AND a.numfam = b.numfam
+                              AND a.numass = i.numass
+                              AND wii < 8)
+                LOOP
+                    wii := wii + 1;
+
+                    IF wii = 1
+                    THEN
+                        r_tablecrm.npass1 :=
+                               TRIM (j.tnomfam)
+                            || ' '
+                            || TRIM (j.nomfam)
+                            || ' '
+                            || TRIM (j.prefam);
+                        r_tablecrm.dnass1 := j.dnaisfam;
+                        r_tablecrm.lnass1 := j.lienfam;
+                        r_tablecrm.primeass1 := j.primettc;
+                    ELSIF wii = 2
+                    THEN
+                        r_tablecrm.npass2 :=
+                               TRIM (j.tnomfam)
+                            || ' '
+                            || TRIM (j.nomfam)
+                            || ' '
+                            || TRIM (j.prefam);
+                        r_tablecrm.dnass2 := j.dnaisfam;
+                        r_tablecrm.lnass2 := j.lienfam;
+                        r_tablecrm.primeass2 := j.primettc;
+                    ELSIF wii = 3
+                    THEN
+                        r_tablecrm.npass3 :=
+                               TRIM (j.tnomfam)
+                            || ' '
+                            || TRIM (j.nomfam)
+                            || ' '
+                            || TRIM (j.prefam);
+                        r_tablecrm.dnass3 := j.dnaisfam;
+                        r_tablecrm.lnass3 := j.lienfam;
+                        r_tablecrm.primeass3 := j.primettc;
+                    ELSIF wii = 4
+                    THEN
+                        r_tablecrm.npass4 :=
+                               TRIM (j.tnomfam)
+                            || ' '
+                            || TRIM (j.nomfam)
+                            || ' '
+                            || TRIM (j.prefam);
+                        r_tablecrm.dnass4 := j.dnaisfam;
+                        r_tablecrm.lnass4 := j.lienfam;
+                        r_tablecrm.primeass4 := j.primettc;
+                    ELSIF wii = 5
+                    THEN
+                        r_tablecrm.npass5 :=
+                               TRIM (j.tnomfam)
+                            || ' '
+                            || TRIM (j.nomfam)
+                            || ' '
+                            || TRIM (j.prefam);
+                        r_tablecrm.dnass5 := j.dnaisfam;
+                        r_tablecrm.lnass5 := j.lienfam;
+                        r_tablecrm.primeass5 := j.primettc;
+                    ELSIF wii = 6
+                    THEN
+                        r_tablecrm.npass6 :=
+                               TRIM (j.tnomfam)
+                            || ' '
+                            || TRIM (j.nomfam)
+                            || ' '
+                            || TRIM (j.prefam);
+                        r_tablecrm.dnass6 := j.dnaisfam;
+                        r_tablecrm.lnass6 := j.lienfam;
+                        r_tablecrm.primeass6 := j.primettc;
+                    ELSIF wii = 7
+                    THEN
+                        r_tablecrm.npass7 :=
+                               TRIM (j.tnomfam)
+                            || ' '
+                            || TRIM (j.nomfam)
+                            || ' '
+                            || TRIM (j.prefam);
+                        r_tablecrm.dnass7 := j.dnaisfam;
+                        r_tablecrm.lnass7 := j.lienfam;
+                        r_tablecrm.primeass7 := j.primettc;
+                    ELSIF wii = 8
+                    THEN
+                        r_tablecrm.npass8 :=
+                               TRIM (j.tnomfam)
+                            || ' '
+                            || TRIM (j.nomfam)
+                            || ' '
+                            || TRIM (j.prefam);
+                        r_tablecrm.dnass8 := j.dnaisfam;
+                        r_tablecrm.lnass8 := j.lienfam;
+                        r_tablecrm.primeass8 := j.primettc;
+                    ELSE
+                        EXIT;
+                    END IF;
+                END LOOP;
+
+                ------------------------------------------------------------------
+                FOR k
+                    IN (SELECT *
+                        FROM v_crm_sinistre a
+                        WHERE     a.numbas = i.numbas
+                              AND a.numass = i.numass
+                              AND a.numcat = i.numcat)
+                LOOP
+                    r_crm_sinistre.numbas := k.numbas;
+                    r_crm_sinistre.numcatbase := i.numcat;
+                    r_crm_sinistre.libcatbase := TRIM (i.libelle);
+                    r_crm_sinistre.numcatadt := k.numcat;
+                    r_crm_sinistre.libcatadt := TRIM (k.libelle);
+                    r_crm_sinistre.typeprod := 'I';
+                    r_crm_sinistre.numass := k.numass;
+                    r_crm_sinistre.nomass := TRIM (k.nomass);
+                    r_crm_sinistre.etatdossier := k.etatdossier;
+                    r_crm_sinistre.nomfam := TRIM (k.nomfam);
+                    r_crm_sinistre.lien := k.lien;
+                    r_crm_sinistre.datesin := k.datsin;
+                    r_crm_sinistre.numdoss := k.numdos;
+                    r_crm_sinistre.datedecl := k.datdcl;
+                    r_crm_sinistre.motif := TRIM (k.libel);
+                    r_crm_sinistre.mtsinistre := k.mtsinistre;
+                    r_crm_sinistre.dateoper := k.dateoper;
+
+                    r_crm_sinistre.frais_engage := k.frais_engage;
+                    r_crm_sinistre.medecin_trait := TRIM (k.medecin_trait);
+                    r_crm_sinistre.observation := TRIM (k.observation);
+                    r_crm_sinistre.nature_soins := TRIM (k.nature_soins);
+
+                    INSERT INTO crm_sinistre
+                    VALUES r_crm_sinistre;
+
+                    r_crm_sinistre := r_crm_sinistre_null;
+                END LOOP;
+            END IF;
+
+
+            -------------------------------------Versement--------------------------------------------------
+            FOR j
+                IN (SELECT *
+                    FROM (SELECT DECODE (dencaiss, NULL, 'IMPAYE', 'PAYE')
+                                     etat,
+                                 a.*
+                          FROM quitance a
+                          WHERE     a.numbas = i.numbas
+                                AND a.numcat = i.numcat
+                                AND dateann IS NULL
+                          ORDER BY ddebut DESC)
+                    WHERE ROWNUM < 13)
+            LOOP
+                r_crm_versement.numcat := i.numcat;
+                r_crm_versement.numbas := i.numbas;
+                r_crm_versement.echeance := j.ddebut;
+                r_crm_versement.date_encais := j.dencaiss;
+                r_crm_versement.etat := j.etat;
+                r_crm_versement.mtvers := j.pritot;
+
+                IF     NVL (i.vir, 'X') = 'P'
+                   AND NVL (j.codenv, ' ') NOT IN ('E', 'P')
+                THEN
+                    r_crm_versement.modpayement := 'prelevement';
+                ELSE
+                    r_crm_versement.modpayement := 'cheque';
+                END IF;
+
+                INSERT INTO crm_versement
+                VALUES r_crm_versement;
+
+                r_crm_versement := r_crm_versement_null;
+            END LOOP;
+
+            ----------------------------------------------------------------------------------------------
+
+
+            INSERT INTO tablecrm
+            VALUES r_tablecrm;
+
+            r_tablecrm := r_tablecrm_null;
+
+            COMMIT;
+        END LOOP;
+    END;
