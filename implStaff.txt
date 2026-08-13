@@ -1,0 +1,413 @@
+@Entity
+@Table(name = "TABLECRM")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ContratMobile {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "ID")
+    private Long id;
+
+    @Column(name = "TYPEPRODUIT", length = 40)
+    private String typeProduit;
+
+    @Column(name = "NUMCAT")
+    private Integer numCat;
+
+    @Column(name = "LIBNUMCAT", length = 70)
+    private String libNumCat;
+
+    @Column(name = "AGCE", length = 5)
+    private String agce;
+
+    @Column(name = "LIBAGCE", length = 40)
+    private String libAgce;
+
+    @Column(name = "NUMCPT", length = 24)
+    private String numCpt;
+
+    @Column(name = "NADH", length = 20)
+    private String nadh;
+
+    @Column(name = "DATESOUS")
+    private LocalDate dateSous;
+
+    @Column(name = "STATCTR", length = 20)
+    private String statCtr;
+
+    @Column(name = "LIBSTATCTR", length = 40)
+    private String libStatCtr;
+
+    @Column(name = "DATE_ANNUL")
+    private LocalDate dateAnnul;
+
+    @Column(name = "NOMPSOUS", length = 90)
+    private String nomPsous;
+
+    @Column(name = "DNSOUS")
+    private LocalDate dnSous;
+
+    @Column(name = "FREQ", length = 1)
+    private String freq;
+
+    @Column(name = "GAROPT", length = 1)
+    private String garOpt;
+
+    @Column(name = "MTDERVL", precision = 12)
+    private Double mtDervl;
+
+    @Column(name = "DATEDVL")
+    private LocalDate dateDvl;
+
+    @Column(name = "MTCOT", precision = 12)
+    private Double mtCot;
+
+    @Column(name = "CUMVP", precision = 12)
+    private Double cumVp;
+
+    @Column(name = "MTENCOUR", precision = 12)
+    private Double mtEncour;
+
+    @Column(name = "DATENCOU")
+    private LocalDate dateEncou;
+
+    @Column(name = "MTRACHP", precision = 12)
+    private Double mtRachp;
+
+    @Column(name = "MTAVCE", precision = 12)
+    private Double mtAvce;
+
+    @Column(name = "GARCOMPL", length = 1)
+    private String garCompl;
+
+    @Column(name = "GARCHOIX", length = 20)
+    private String garChoix;
+
+    @Column(name = "IJ", length = 1)
+    private String ij;
+
+    @Column(name = "MTIJ", precision = 12)
+    private Double mtIj;
+
+    @Column(name = "NPASS1", length = 70)
+    private String npAss1;
+
+    @Column(name = "DNASS1")
+    private LocalDate dnAss1;
+
+    @Column(name = "LNASS1", length = 1)
+    private String lnAss1;
+
+    @Column(name = "PRIMEASS1", precision = 12)
+    private Double primeAss1;
+
+    @Column(name = "NPASS2", length = 70)
+    private String npAss2;
+
+    @Column(name = "DNASS2")
+    private LocalDate dnAss2;
+
+    @Column(name = "LNASS2", length = 1)
+    private String lnAss2;
+
+    @Column(name = "PRIMEASS2", precision = 12)
+    private Double primeAss2;
+
+    @Column(name = "NPASS3", length = 70)
+    private String npAss3;
+
+    @Column(name = "DNASS3")
+    private LocalDate dnAss3;
+
+    @Column(name = "LNASS3", length = 1)
+    private String lnAss3;
+
+    @Column(name = "PRIMEASS3", precision = 12)
+    private Double primeAss3;
+
+    @Column(name = "NPASS4", length = 70)
+    private String npAss4;
+
+    @Column(name = "DNASS4")
+    private LocalDate dnAss4;
+
+    @Column(name = "LNASS4", length = 1)
+    private String lnAss4;
+
+    @Column(name = "PRIMEASS4", precision = 12)
+    private Double primeAss4;
+
+    @Column(name = "NPASS5", length = 70)
+    private String npAss5;
+
+    @Column(name = "DNASS5")
+    private LocalDate dnAss5;
+
+    @Column(name = "LNASS5", length = 1)
+    private String lnAss5;
+
+    @Column(name = "PRIMEASS5", precision = 12)
+    private Double primeAss5;
+
+    @Column(name = "NPASS6", length = 70)
+    private String npAss6;
+
+    @Column(name = "DNASS6")
+    private LocalDate dnAss6;
+
+    @Column(name = "LNASS6", length = 1)
+    private String lnAss6;
+
+    @Column(name = "PRIMEASS6", precision = 12)
+    private Double primeAss6;
+
+    @Column(name = "NPASS7", length = 70)
+    private String npAss7;
+
+    @Column(name = "DNASS7")
+    private LocalDate dnAss7;
+
+    @Column(name = "LNASS7", length = 1)
+    private String lnAss7;
+
+    @Column(name = "PRIMEASS7", precision = 12)
+    private Double primeAss7;
+
+    @Column(name = "NPASS8", length = 70)
+    private String npAss8;
+
+    @Column(name = "DNASS8")
+    private LocalDate dnAss8;
+
+    @Column(name = "LNASS8", length = 1)
+    private String lnAss8;
+
+    @Column(name = "PRIMEASS8", precision = 12)
+    private Double primeAss8;
+
+    @Column(name = "CAPITAL", precision = 15)
+    private Double capital;
+
+    @Column(name = "PPIPPO", length = 20)
+    private String ppippo;
+
+    @Column(name = "DATERACH")
+    private LocalDate dateRach;
+
+    @Column(name = "DATEAVCE")
+    private LocalDate dateAvce;
+
+    @Column(name = "ID_LOGIN")
+    private Long idLogin;
+
+    @Column(name = "CIN", length = 20)
+    private String cin;
+
+    @Column(name = "NUM_TEL", length = 20)
+    private String numTel;
+
+    @Column(name = "CLBENEF1", length = 80)
+    private String clBenef1;
+
+    @Column(name = "CLBENEF2", length = 80)
+    private String clBenef2;
+
+    @Column(name = "CLBENEF3", length = 80)
+    private String clBenef3;
+
+    @Column(name = "PER_EMAIL", length = 50)
+    private String perEmail;
+
+    @Column(name = "NTSMT")
+    private Integer ntsmt;
+
+    @Column(name = "NBRACHAT")
+    private Integer nbRachat;
+
+    @Column(name = "DEFNTSM")
+    private LocalDate defNtsm;
+
+    @Column(name = "DATEEXPIRATION")
+    private LocalDate dateExpiration;
+
+    @Column(name = "MINVERSLIBRE", precision = 12)
+    private Double minVersLibre;
+
+    @Column(name = "MINVERSPROGM", precision = 12)
+    private Double minVersProgm;
+
+    @Column(name = "MINVERSPROGT", precision = 12)
+    private Double minVersProgt;
+
+    @Column(name = "MINVERSPROGA", precision = 12)
+    private Double minVersProga;
+
+    @Column(name = "CODE_CLT_SGMA")
+    private Long codeCltSgma;
+
+    @Column(name = "CONTRACTANTE", length = 40)
+    private String contractante;
+
+    @Column(name = "MATRICULE")
+    private Long matricule;
+
+    @Column(name = "MNTPARTSALARIE", precision = 15)
+    private Double mntPartSalarie;
+
+    @Column(name = "MNTPARTPATRON", precision = 15)
+    private Double mntPartPatron;
+
+    @Column(name = "MNTPREMIERVERSEMENT")
+    private Double mntPremierVersement;
+}
+
+
+PROCEDURE proc_tabcrm_sis
+IS
+    r_tablecrm        tablecrm%ROWTYPE;
+    r_tablecrm_null   tablecrm%ROWTYPE;
+BEGIN
+    FOR i
+        IN (SELECT gr.*,
+                   b.libelle_client libelle,               /* c.NOMAGCE,*/
+                   DECODE (status_cod,  'INF', 1,  'SUS', 2,  0) statctr,
+                   a.pm,
+                   pm_saving_effec_dte,
+                   avance_ttc,
+                   minverslibre,
+                   minversprogm,
+                   minversprogt,
+                   minversproga,
+                   DECODE (ntsmt, 'O', 1, 0) ntsmtb
+            FROM iia.v_pm_dh_support a,
+                 iia.v_grc_globale_personne_mobile gr,
+                 categori b                                /*, bagence c*/
+                           ,
+                 categ_vers_mobil cvm
+            WHERE     a.cat(+) = gr.code_produit
+                  AND a.nadhes(+) = gr.n__adhesion_n_contrat
+                  AND gr.code_produit = b.numcat
+                  AND UPPER(TRIM(gr.STATUS_COD)) NOT IN ('DBO', 'CLO')
+                  AND gr.code_produit <> 205
+                  AND gr.code_produit = cvm.numcat(+) --and   decode(gr.Code_agence,'SGMB',0,gr.Code_agence) = c.codagce
+                                                     --and   gr.libelle_garantie=decode(gr.Code_produit,206,'D c s','Plancher')
+                                                     )
+    LOOP
+        --R_TABLECRM.TYPEPRODUIT:='VMS';
+        r_tablecrm.typeproduit := typeproduit (i.code_produit);
+        r_tablecrm.numcat := i.code_produit;
+        r_tablecrm.libnumcat := i.libelle;
+        r_tablecrm.agce := LPAD (i.code_agence, 3, '0');
+        r_tablecrm.libagce := i.libelle_agence                 /*NOMAGCE*/
+                                              ;
+        r_tablecrm.numcpt := i.n_compte_bancaire_pp;
+        r_tablecrm.nadh := i.n__adhesion_n_contrat;
+        r_tablecrm.datesous := i.date_effet_du_contrat;
+        r_tablecrm.statctr := i.statctr;
+        r_tablecrm.cin :=
+            REPLACE (REPLACE (UPPER (i.n_cin), ' ', ''), '.', '');
+        r_tablecrm.num_tel := TRIM (i.num_tel_mobil);
+        r_tablecrm.per_email := TRIM (i.per_email_mobil);
+
+
+        r_tablecrm.libstatctr := i.status_cod;
+
+
+
+        r_tablecrm.nompsous :=
+               NVL (TRIM (i.nom_de_adherent), ' ')
+            || ' '
+            || NVL (TRIM (i.prenom_de_adherent), ' ');
+        r_tablecrm.dnsous := i.date_naissance;
+
+        r_tablecrm.mtencour := i.pm;
+        r_tablecrm.datencou := i.pm_saving_effec_dte;
+        r_tablecrm.ntsmt := i.ntsmtb;
+
+        IF i.code_produit IN (200,
+                              201,
+                              205,
+                              206)
+        THEN
+            r_tablecrm.code_clt_sgma := i.code_clt_sgma;
+        END IF;
+
+        r_tablecrm.dateexpiration := NULL;
+        r_tablecrm.minverslibre := i.minverslibre;
+        r_tablecrm.minversprogm := i.minversprogm;
+        r_tablecrm.minversprogt := i.minversprogt;
+        r_tablecrm.minversproga := i.minversproga;
+
+
+        -----------------------
+        ---  Total des primes
+        -----------------------
+        SELECT SUM (fnd_inv_div_com_mnt)
+        INTO r_tablecrm.cumvp
+        FROM v_grc_tot_prime
+        WHERE     contract_num = i.n__adhesion_n_contrat
+              AND ref_product_id = i.code_produit;
+
+        -----------------------
+        ---  Total des Rachats
+        -----------------------
+        SELECT SUM (fnd_inv_div_net_mnt), MAX (effec_dte), COUNT (1)
+        INTO r_tablecrm.mtrachp, r_tablecrm.daterach, r_tablecrm.nbrachat
+        FROM v_grc_tot_rt
+        WHERE     contract_num = i.n__adhesion_n_contrat
+              AND ref_product_id = i.code_produit;
+
+        IF NVL (r_tablecrm.mtrachp, 0) = 0
+        THEN
+            r_tablecrm.daterach := NULL;
+        END IF;
+
+        r_tablecrm.mtavce := i.avance_ttc;
+
+        IF NVL (i.avance_ttc, 0) > 0
+        THEN
+            SELECT MAX (dateoctr)
+            INTO r_tablecrm.dateavce
+            FROM v_grc_tot_av
+            WHERE     adherent = i.n__adhesion_n_contrat
+                  AND categorie = i.code_produit;
+        ELSE
+            r_tablecrm.dateavce := NULL;
+        END IF;
+
+
+        INSERT INTO crm_pm_uc_support (rang,
+                                       pm_saving_effec_dte,
+                                       numcat,
+                                       nadh,
+                                       ref_support_id,
+                                       support,
+                                       pm_val)
+            SELECT ROWNUM,
+                   pm_saving_effec_dte,
+                   cat,
+                   nadhes,
+                   id_support,
+                   support,
+                   pm_val
+            FROM v_pm_uc_support
+            WHERE     cat = i.code_produit
+                  AND nadhes = i.n__adhesion_n_contrat;
+
+        INSERT INTO tablecrm
+        VALUES r_tablecrm;
+
+        r_tablecrm := r_tablecrm_null;
+
+        COMMIT;
+    END LOOP;
+END;
+
+
+@Override
+    public ContratMobile getcontratDetail(String cin, Integer numCat, String nadh, Long matricule) {
+        return null;
+    }
