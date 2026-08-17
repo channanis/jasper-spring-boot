@@ -264,150 +264,679 @@ public class ContratMobile {
     private Double mntPremierVersement;
 }
 
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Table(name = "BCONTRAT")
+@IdClass(ContratId.class)
+public class Contrat implements Serializable {
 
-PROCEDURE proc_tabcrm_sis
-IS
-    r_tablecrm        tablecrm%ROWTYPE;
-    r_tablecrm_null   tablecrm%ROWTYPE;
-BEGIN
-    FOR i
-        IN (SELECT gr.*,
-                   b.libelle_client libelle,               /* c.NOMAGCE,*/
-                   DECODE (status_cod,  'INF', 1,  'SUS', 2,  0) statctr,
-                   a.pm,
-                   pm_saving_effec_dte,
-                   avance_ttc,
-                   minverslibre,
-                   minversprogm,
-                   minversprogt,
-                   minversproga,
-                   DECODE (ntsmt, 'O', 1, 0) ntsmtb
-            FROM iia.v_pm_dh_support a,
-                 iia.v_grc_globale_personne_mobile gr,
-                 categori b                                /*, bagence c*/
-                           ,
-                 categ_vers_mobil cvm
-            WHERE     a.cat(+) = gr.code_produit
-                  AND a.nadhes(+) = gr.n__adhesion_n_contrat
-                  AND gr.code_produit = b.numcat
-                  AND UPPER(TRIM(gr.STATUS_COD)) NOT IN ('DBO', 'CLO')
-                  AND gr.code_produit <> 205
-                  AND gr.code_produit = cvm.numcat(+) --and   decode(gr.Code_agence,'SGMB',0,gr.Code_agence) = c.codagce
-                                                     --and   gr.libelle_garantie=decode(gr.Code_produit,206,'D c s','Plancher')
-                                                     )
-    LOOP
-        --R_TABLECRM.TYPEPRODUIT:='VMS';
-        r_tablecrm.typeproduit := typeproduit (i.code_produit);
-        r_tablecrm.numcat := i.code_produit;
-        r_tablecrm.libnumcat := i.libelle;
-        r_tablecrm.agce := LPAD (i.code_agence, 3, '0');
-        r_tablecrm.libagce := i.libelle_agence                 /*NOMAGCE*/
-                                              ;
-        r_tablecrm.numcpt := i.n_compte_bancaire_pp;
-        r_tablecrm.nadh := i.n__adhesion_n_contrat;
-        r_tablecrm.datesous := i.date_effet_du_contrat;
-        r_tablecrm.statctr := i.statctr;
-        r_tablecrm.cin :=
-            REPLACE (REPLACE (UPPER (i.n_cin), ' ', ''), '.', '');
-        r_tablecrm.num_tel := TRIM (i.num_tel_mobil);
-        r_tablecrm.per_email := TRIM (i.per_email_mobil);
+    @Serial
+    private static final long serialVersionUID = 2567143523558969904L;
+
+    @Id
+    @Column(name = "NUMCAT")
+    private Integer categorie;
+
+    @Column(name = "GAMME")
+    private Integer gamme;
+
+    @Id
+    @Column(name = "NADHES")
+    private Integer numContrat;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "NUMCAT", insertable = false, updatable = false)
+    private Category category;
+
+    @Column(name = "CODVERS")
+    private Integer codeVersement;
+
+    @Column(name = "POLICE")
+    private Integer police;
+
+    @ManyToOne
+    @JoinColumn(name = "CODCLT")
+    @NotFound(action = NotFoundAction.IGNORE)
+    private Client client;
+
+    @Column(name = "TYPECLT")
+    private String typeClient;
+
+    @Column(name = "CLTSGMB")
+    private Integer clientSGMB;
+
+    @Column(name = "MATAGT")
+    private String matriculeAgent;
+
+    @Column(name = "MTCOT")
+    private Double montantCotisation;
+
+    @Column(name = "TAUXPRIM")
+    private Double tauxPrime;
+
+    @Column(name = "TAXB")
+    private Double taxeB;
+
+    @Column(name = "FREQ")
+    private String frequance;
+
+    @Column(name = "CAPITAL")
+    private Double capital;
+
+    @Column(name = "DATEFF")
+    private LocalDate dateEffet;
+
+    @Column(name = "DEMISSIO")
+    private LocalDate dateEmission;
+
+    @Column(name = "PGMVERST")
+    private String programmeVersement;
+
+    @Column(name = "defpgmve")
+    private LocalDate dateEffetProgrameV;
+
+    @Column(name = "DRNVPATR")
+    private LocalDate dateRenouvellement;
+
+    @Column(name = "DURCONTR")
+    private Integer dureContrat;
+
+    @Column(name = "DEXPCONT")
+    private LocalDate dateExpirationContrat;
+
+    @ManyToOne
+    @JoinColumn(name = "TYPANN")
+    @NotFound(action = NotFoundAction.IGNORE)
+    private Typanbc typeAnnulation;
+
+    @Column(name = "STYPANN")
+    private Integer sousTypeAnnulation;
+
+    @Column(name = "DANNULAT")
+    private LocalDate dateAnnulation;
+
+    @Column(name = "DSUSPVERS")
+    private LocalDate dateSuspVersement;
+
+    @Column(name = "CODSUSP")
+    private Integer codeSusp;
+
+    @Column(name = "DACCEPT")
+    private LocalDate dateAcceptation;
+
+    @Column(name = "DPRELEV")
+    private LocalDate datePrelevement;
+
+    @Column(name = "BANQCPT")
+    private String banqueCompte;
+
+    @Column(name = "VILLECPT")
+    private String villeCompte;
+
+    @Column(name = "PLACECPT")
+    private String placeCompte;
+
+    @ManyToOne
+    @JoinColumn(name = "CODAGCE")
+    @NotFound(action = NotFoundAction.IGNORE)
+    private Agence agence;
+
+    @Column(name = "DEVISCPT")
+    private String deviseCompte;
+
+    @Column(name = "CPT")
+    private String compte;
+
+    @Column(name = "CLECPT")
+    private String cleCompte;
+
+    @Column(name = "CLERIB")
+    private String cleRIB;
+
+    @ManyToOne
+    @JoinColumn(name = "CDAGMERE")
+    @NotFound(action = NotFoundAction.IGNORE)
+    private Agcmere agenceMere;
+
+    @Column(name = "OPT")
+    private String opt;
+
+    @Column(name = "ETAT")
+    private String etat;
+
+    @Column(name = "ETAREJ")
+    private Integer etatRejet;
+
+    @Column(name = "SITFISCA")
+    private String sitfisca;
+
+    @Column(name = "RISQAGRV")
+    private String risqagrv;
+
+    @Column(name = "EXONERVP")
+    private String exonervp;
+
+    @Column(name = "CODPMZER")
+    private Integer codpmzer;
+
+    @Column(name = "ACPTBENF")
+    private String acptbenf;
+
+    @Column(name = "DEROGCOM")
+    private String derogcom;
+
+    @Column(name = "UTILIS")
+    private String utilis;
+
+    @Column(name = "DATRECEPT")
+    private LocalDate dateReception;
+
+    @Column(name = "DATEFFTR")
+    private LocalDate dateEffetR;
+
+    @Column(name = "POLTRANS")
+    private Integer poltrans;
+
+    @Column(name = "DATREPONSE")
+    private LocalDate dateReponse;
+
+    @Column(name = "DATEMIUN")
+    private LocalDate datemiun;
+
+    @Column(name = "DATANT")
+    private LocalDate dateAnterieur;
+
+    @Column(name = "PPIPPO")
+    private String ppippo;
+
+    @Column(name = "OPTOF")
+    private String optof;
+
+    @Column(name = "CCP")
+    private String ccp;
+
+    @Column(name = "OPTEX")
+    private String optex;
+
+    @Column(name = "COUASS")
+    private Integer couAss;
+
+    @Column(name = "NUMIDENT")
+    private Integer numeroIdentifiant;
+
+    @Column(name = "NUMACCEP")
+    private Integer numeroAcceptation;
+
+    @Column(name = "MATRICULE")
+    private Integer matricule;
+
+    @Column(name = "CANAL")
+    private String canal;
+
+    @Column(name = "APPORT")
+    private String apport;
+
+    @Column(name = "CPTSUSPEN_BAR")
+    private String compteSuspensBar;
+
+    @Column(name = "CPTRESIL_BAR")
+    private String compteResilieBar;
+
+    @Column(name = "DEDTCERT")
+    private LocalDate dateEditionCertificat;
+
+    @Column(name = "NIDSGMA")
+    private Long numeroIdentifiantSGMA;
+
+    @Column(name = "DATEMED")
+    private LocalDate dateMiseEnDemeur;
+
+    @Column(name = "TEST")
+    private String test;
+
+    @Column(name = "NTSMT")
+    private String ntsmt;
+
+    @Column(name = "DEFNTSM")
+    private LocalDate defntsm;
+
+    @Column(name = "PRETAMOR")
+    private String pretamor;
+
+    @Column(name = "DATE_REPRISE_PREV_HOSP")
+    private LocalDate dateReprosePrevHosp;
+
+    @Column(name = "EDP")
+    private String edp;
+
+    @Column(name = "CATCLI")
+    private String catClient;
+
+    @Column(name = "RIB", insertable = false, updatable = false)
+    private String rib;
+
+    @Column(name = "GENERATION")
+    private String generation;
+
+    @Column(name = "CODE_CLT_SGMA")
+    private Integer codeClientSGMA;
+
+    @Column(name = "CODEPRIN")
+    private String codeprin;
+
+    @Column(name = "DATE_RECEPT_BA_PHYS")
+    private LocalDate dateRecepBAPhys;
+
+    @Column(name = "DATE_RECEPT_BA_ECLTRO")
+    private LocalDate dateRecepBAElectro;
+
+    @Column(name = "REPORT_PRELEV")
+    private String reportPrelevement;
+
+    @Column(name = "CODE_GEST")
+    private String codeGest;
+
+    @Column(name = "CODEG_AGENCE_GEST")
+    private String codegAgenceGest;
+
+    @Column(name = "CODE_MARCHE")
+    private String codeMarche;
+
+    @Column(name = "SYNCHRO")
+    private Integer synchro;
+
+    @Column(name = "LIBELLE_ERREUR")
+    private String error;
+
+    @Column(name = "NUMERO_BA")
+    private String numeroBA;
+
+    @Column(name = "NUMIDTRANS")
+    private String idTransaction;
+
+}
+
+@Table(name = "ADHERENT")
+@IdClass(AdherentId.class)
+public class Adherent implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 8384216855580075782L;
+
+    @Id
+    @Column(name = "MATRICULE")
+    private Long matricule;
+
+    @Id
+    @Column(name = "POLICE")
+    private Long police;
+
+    @Id
+    @Column(name = "NUMCAT")
+    private Long numCat;
+
+    @Column(name = "CODEADH")
+    private String numAdhesion;
+
+    @Column(name = "TNOM")
+    private String civilite;
+
+    @Column(name = "NOMASS")
+    private String prenom;
+
+    @Column(name = "PRENOM")
+    private String nom;
+
+    @Column(name = "CIN")
+    private String cin;
+
+    @Column(name = "NUMCOMPTE")
+    private String numCompte;
+
+    @Column(name = "CAPITAL")
+    private Double capital;
+
+    @Column(name = "COTISATINI")
+    private Double cotisatini;
+
+    @Column(name = "ADR1ASS")
+    private String adress1;
+
+    @Column(name = "ADR2ASS")
+    private String adress2;
+
+    @Column(name = "RANG")
+    private Long rang;
+
+    @Column(name = "NUMPROPOS", length = 20)
+    private String numPropos;
+
+    @Column(name = "DATEPROPOS")
+    private LocalDate datePropos;
+
+    @Column(name = "IND1ASS")
+    private Long ind1Ass;
+
+    @Column(name = "TEL1ASS")
+    private Long tel1Ass;
+
+    @Column(name = "IND2ASS")
+    private Long ind2Ass;
+
+    @Column(name = "TEL2ASS")
+    private Long tel2Ass;
+
+    @Column(name = "INDFAASS")
+    private Long indFaAss;
+
+    @Column(name = "FAXASS")
+    private Long faxAss;
+
+    @Column(name = "EMAILASS", length = 40)
+    private String emailAss;
+
+    @Column(name = "DNAISASS")
+    private LocalDate dnaisAss;
+
+    @Column(name = "AGEASS")
+    private Long ageAss;
+
+    @Column(name = "SFAMASS", length = 12)
+    private String sfamAss;
+
+    @Column(name = "NBRENFANT")
+    private Long nbrEnfant;
+
+    @Column(name = "SEXEASS", length = 10)
+    private String sexeAss;
+
+    @Column(name = "DATENTREE")
+    private LocalDate datEntree;
+
+    @Column(name = "DETDEPART")
+    private LocalDate dateDepart;
+
+    @Column(name = "DUREE")
+    private Long duree;
+
+    @Column(name = "DUREPRET")
+    private Long durePret;
+
+    @Column(name = "DIFFERE")
+    private Long differe;
+
+    @Column(name = "PILOTSTAG", length = 20)
+    private String pilotStag;
+
+    @Column(name = "BENEFICIARE", length = 60)
+    private String beneficiare;
+
+    @Column(name = "SALAIRE")
+    private Long salaire;
+
+    @Column(name = "TAUXPATR")
+    private Long tauxPatr;
+
+    @Column(name = "TAUXSAL")
+    private Long tauxSal;
+
+    @Column(name = "CAPASS")
+    private Long capAss;
+
+    @Column(name = "QPA")
+    private Long qpa;
+
+    @Column(name = "PRIMENETTE")
+    private Long primeNette;
+
+    @Column(name = "PRIMEDECES")
+    private Long primeDeces;
+
+    @Column(name = "PRIMEINV")
+    private Long primeInv;
+
+    @Column(name = "SURPRIME")
+    private Long surPrime;
+
+    @Column(name = "FPF")
+    private Long fpf;
+
+    @Column(name = "PUI")
+    private Long pui;
+
+    @Column(name = "CODESUSP")
+    private String codeSusp;
+
+    @Column(name = "DATESUSP")
+    private LocalDate dateSusp;
+
+    @Column(name = "DATSAISIE")
+    private LocalDate datSaisie;
+
+    @Column(name = "EXPOLICE", length = 8)
+    private String exPolice;
+
+    @Column(name = "DATE1TERME")
+    private LocalDate date1Terme;
+
+    @Column(name = "MOISEMMI")
+    private Long moisEmmi;
+
+    @Column(name = "DATEXPIR")
+    private LocalDate datExpir;
+
+    @Column(name = "ADMCOM")
+    private String admCom;
+
+    @Column(name = "CDREADHE")
+    private String cdrAdhe;
+
+    @Column(name = "AFFECTATION", length = 100)
+    private String affectation;
+
+    @Column(name = "MOISRESTI")
+    private LocalDate moisResti;
+
+    @Column(name = "MOTSORT", length = 50)
+    private String motSort;
+
+    @Column(name = "DEROG")
+    private String derog;
+
+    @Column(name = "TYPDEROG", length = 100)
+    private String typDerog;
+
+    @Column(name = "OPT")
+    private String opt;
+
+    @Column(name = "DATEXPOPT")
+    private LocalDate dateXpOpt;
+
+    @Column(name = "EXONPS", length = 10)
+    private String exonPs;
+
+    @Column(name = "TYPANN")
+    private Long typAnn;
+
+    @Column(name = "DATEVR")
+    private LocalDate dateVr;
+
+    @Column(name = "POLTRANS")
+    private Long polTrans;
+
+    @Column(name = "EFFTRANS")
+    private LocalDate effTrans;
+
+    @Column(name = "CLBENIF", length = 50)
+    private String clBenif;
+
+    @Column(name = "DTMEG")
+    private LocalDate dtMeg;
+
+    @Column(name = "CATRANS")
+    private Long catTrans;
+
+    @Column(name = "MATRANS")
+    private Long maTrans;
+
+    @Column(name = "DEDFISC", length = 3)
+    private String dedFisc;
+
+    @Column(name = "DATPRENC")
+    private LocalDate datPrenc;
+
+    @Column(name = "DATREDUC")
+    private LocalDate datReduc;
+
+    @Column(name = "DATRECTV")
+    private LocalDate datRectv;
+
+    @Column(name = "MTFREACT")
+    private Long mtFreAct;
+
+    @Column(name = "COPYMATRICULE")
+    private Long copyMatricule;
+
+    @Column(name = "BAORIGINAL", length = 3)
+    private String baOriginal;
+
+    @Column(name = "CODEPOSTALE")
+    private Long codePostale;
+
+    @Column(name = "NUMPROF")
+    private Long numProf;
+
+    @Column(name = "GSM", length = 20)
+    private String gsm;
+
+    @Column(name = "MATRICULECMIM", length = 20)
+    private String matriculeCmim;
+
+    @Column(name = "DATE_DEPART_CTR")
+    private LocalDate dateDepartCtr;
+
+    @Column(name = "MOTIF_DEPART_CTR", length = 40)
+    private String motifDepartCtr;
+
+    @Column(name = "TAXE", precision = 10)
+    private Double taxe;
+
+    @Column(name = "PRIMETTC", precision = 10)
+    private Double primeTtc;
+
+    @Column(name = "CODE_INTEGRATION")
+    private Long codeIntegration;
+
+    @Column(name = "CATEGORIEPERSONNEL")
+    private Long categoriePersonnel;
+
+    @Column(name = "TAUXCALCULCAPITAL", precision = 8)
+    private Double tauxCalculCapital;
+
+    @Column(name = "CAPITALSUPP", precision = 15)
+    private Double capitalSupp;
+
+    @Column(name = "CAPITALFACULTATIF", precision = 15)
+    private Double capitalFacultatif;
+
+    @Column(name = "CAPITALGARANTIEDECES", precision = 15)
+    private Double capitalGarantieDeces;
+
+    @Column(name = "BENEFICIARESMEG", length = 200)
+    private String beneficiaresMeg;
+
+    @Column(name = "CAPITALDELEGUE", length = 3)
+    private String capitalDelegue;
+
+    @Column(name = "PERSONNELRETRAITE", length = 10)
+    private String personnelRetraite;
+
+    @Column(name = "PER_EMAIL_MOBIL", length = 50)
+    private String perEmailMobil;
+
+    @Column(name = "PRIMEAUTRGARANTIE")
+    private Long primeAutrGarantie;
+
+    @ManyToOne
+    @JoinColumn(name = "NUMCAT", insertable = false, updatable = false)
+    private Category category;
+
+    @ManyToOne
+    @JoinColumn(name = "NUMVIL", referencedColumnName = "NUMVIL")
+    private Ville ville;
+
+    @OneToMany(mappedBy = "adherent", fetch = FetchType.LAZY)
+    private List<Cotisation> cotisations;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumns({
+            @JoinColumn(name = "POLICE", referencedColumnName = "POLICE", insertable = false, updatable = false),
+            @JoinColumn(name = "NUMCAT", referencedColumnName = "NUMCAT", insertable = false, updatable = false),
+            @JoinColumn(name = "ECHEANCE", referencedColumnName = "ECHEANCE", insertable = false, updatable = false)
+    })
+    private Societe societe;
+}
 
 
-        r_tablecrm.libstatctr := i.status_cod;
+@Entity
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@Table(name = "BASE")
+public class Base implements Serializable {
 
+    @Serial
+    private static final long serialVersionUID = 8394216855580075782L;
 
+    @Id
+    @Column(name = "NUMBAS")
+    private Long numBas;
 
-        r_tablecrm.nompsous :=
-               NVL (TRIM (i.nom_de_adherent), ' ')
-            || ' '
-            || NVL (TRIM (i.prenom_de_adherent), ' ');
-        r_tablecrm.dnsous := i.date_naissance;
+    @Column(name = "MODPBAS")
+    private String modPBas;
 
-        r_tablecrm.mtencour := i.pm;
-        r_tablecrm.datencou := i.pm_saving_effec_dte;
-        r_tablecrm.ntsmt := i.ntsmtb;
+    @Column(name = "DEFFBAS")
+    private LocalDate deffBas;
 
-        IF i.code_produit IN (200,
-                              201,
-                              205,
-                              206)
-        THEN
-            r_tablecrm.code_clt_sgma := i.code_clt_sgma;
-        END IF;
+    @Column(name = "DATANNUL")
+    private LocalDate datAnnul;
 
-        r_tablecrm.dateexpiration := NULL;
-        r_tablecrm.minverslibre := i.minverslibre;
-        r_tablecrm.minversprogm := i.minversprogm;
-        r_tablecrm.minversprogt := i.minversprogt;
-        r_tablecrm.minversproga := i.minversproga;
+    @Column(name = "DASUSPEN")
+    private LocalDate daSuspen;
 
+    @Column(name = "NUCPTBAN", length = 24)
+    private String nucptBan;
 
-        -----------------------
-        ---  Total des primes
-        -----------------------
-        SELECT SUM (fnd_inv_div_com_mnt)
-        INTO r_tablecrm.cumvp
-        FROM v_grc_tot_prime
-        WHERE     contract_num = i.n__adhesion_n_contrat
-              AND ref_product_id = i.code_produit;
+    @Column(name = "PRIMEBAS")
+    private Double primeBas;
 
-        -----------------------
-        ---  Total des Rachats
-        -----------------------
-        SELECT SUM (fnd_inv_div_net_mnt), MAX (effec_dte), COUNT (1)
-        INTO r_tablecrm.mtrachp, r_tablecrm.daterach, r_tablecrm.nbrachat
-        FROM v_grc_tot_rt
-        WHERE     contract_num = i.n__adhesion_n_contrat
-              AND ref_product_id = i.code_produit;
+    @Column(name = "PPI")
+    private Double ppi;
 
-        IF NVL (r_tablecrm.mtrachp, 0) = 0
-        THEN
-            r_tablecrm.daterach := NULL;
-        END IF;
+    @Column(name = "PUI")
+    private Double pui;
 
-        r_tablecrm.mtavce := i.avance_ttc;
+    @Column(name = "CAPBAS")
+    private Double capBas;
 
-        IF NVL (i.avance_ttc, 0) > 0
-        THEN
-            SELECT MAX (dateoctr)
-            INTO r_tablecrm.dateavce
-            FROM v_grc_tot_av
-            WHERE     adherent = i.n__adhesion_n_contrat
-                  AND categorie = i.code_produit;
-        ELSE
-            r_tablecrm.dateavce := NULL;
-        END IF;
+    @Column(name = "NANTISSEMENT")
+    private String nantissement;
 
+    @ManyToOne
+    @JoinColumn(name = "NUMCAT")
+    private Category category;
 
-        INSERT INTO crm_pm_uc_support (rang,
-                                       pm_saving_effec_dte,
-                                       numcat,
-                                       nadh,
-                                       ref_support_id,
-                                       support,
-                                       pm_val)
-            SELECT ROWNUM,
-                   pm_saving_effec_dte,
-                   cat,
-                   nadhes,
-                   id_support,
-                   support,
-                   pm_val
-            FROM v_pm_uc_support
-            WHERE     cat = i.code_produit
-                  AND nadhes = i.n__adhesion_n_contrat;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "NUMASS")
+    private Assure assure;
 
-        INSERT INTO tablecrm
-        VALUES r_tablecrm;
+    @OneToMany(mappedBy = "base", fetch = FetchType.LAZY)
+    private List<Quitance> quitances;
 
-        r_tablecrm := r_tablecrm_null;
+}
 
-        COMMIT;
-    END LOOP;
-END;
-
-
-@Override
-    public ContratMobile getcontratDetail(String cin, Integer numCat, String nadh, Long matricule) {
-        return null;
-    }
