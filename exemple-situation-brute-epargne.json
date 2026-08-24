@@ -1,0 +1,18 @@
+{
+  "code": "SITUATION_BRUTE_EPARGNE_BANCASS",
+  "format": "PDF",
+  "data": {
+    "titre": "M.",
+    "nom": "ALAOUI",
+    "prenom": "Karim",
+    "adresse1": "Résidence Al Amal, Apt 12",
+    "adresse2": "Rue des Orangers, Casablanca",
+    "numeroCategorie": "VR",
+    "numeroAdhesion": "AD-123456",
+    "dateEffet": "2020-06-01",
+    "svk": 0,
+    "mtcot": 27000.00,
+    "mtavance": 0,
+    "vprim": 29450.75
+  }
+}
