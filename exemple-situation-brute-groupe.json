@@ -1,0 +1,21 @@
+{
+  "code": "SITUATION_BRUTE_GROUPE",
+  "format": "PDF",
+  "data": {
+    "nomAssure": "ACME INDUSTRIES",
+    "adresse1Assure": "Zone Industrielle Sidi Bernoussi",
+    "adresse2Assure": "Lot 45",
+    "villeAssure": "Casablanca",
+    "nomContractant": "ACME INDUSTRIES",
+    "numeroCategorie": "GRP",
+    "police": "POL-2026-001",
+    "matricule": "MAT-9087",
+    "derniereEcheanceCapitalisee": "2026-03-05",
+    "montantNet": 118450.00,
+    "sommeCotisationPeriode": 75000.00,
+    "sommeCotisationPatronale": 45000.00,
+    "sommeCotisationSalariale": 30000.00,
+    "montantAvanceNonRemboursee": 0,
+    "montant": 118450.00
+  }
+}
