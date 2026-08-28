@@ -1,443 +1,133 @@
-@POST
-    @Path("/demandePrestation")
+ @GET
+    @Path("")
     @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response add(@Context HttpServletRequest request, @MultipartForm PrestationFormBean prestationFormBean) throws IOException {
-        FrontUserDetails user = (FrontUserDetails) request.getSession().getAttribute("user");
-        if (user == null) {
-            log.error("Error while  demandePrestation");
-            return Utils.generateResponse();
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response downloadDocument(@Context HttpServletRequest request,
+                                              @QueryParam("numCategorie") Long numCategorie,
+                                              @QueryParam("numContrat") Long numContrat,
+                                              @QueryParam("matricule") Long matricule,
+                                              @QueryParam("codeDocument") Long codeDocument) {
+        log.info("Start printing doc with numContrat={}, numCat={}, matricule={}, codeDocument={codeDocument}", new Object[]{numContrat, numCategorie, matricule, codeDocument});
+
+        PrintingDownloadOutputDTO result = printingService.downloadDocument(numCategorie, numContrat, matricule, request);
+
+        log.info("download completed successfully");
+        return Response.ok(result).build();
+
+    }
+
+@Override
+    public PrintingDownloadOutputDTO downloadDocument(Long numCat, Long police, Long matricule, HttpServletRequest request) {
+
+        log.info("Start printing doc with numContrat={}, numCat={}, matricule={}", new Object[]{police, numCat, matricule});
+
+        // Vérification d'autorisation
+        if (authorizationUtil.isCustomerNotAuthorized(
+                request,
+                police,
+                numCat.intValue(),
+                matricule)) {
+            log.warn("Authorization failed for contrat={}, categorie={}, matricule={}", new Object[]{police, numCat, matricule});
+            throw new ForbiddenException("Accès interdit", "FORBIDDEN");
         }
-        try {
-            log.debug("Start Adding prestation objet: " + prestationFormBean.getPrestation());
-            log.debug(" Adding prestation file: " + Arrays.toString(prestationFormBean.getData()));
-            prestationService.addPrestation(prestationFormBean,user.getUsername());
-            Map<String, String> map = new HashMap<String, String>();
-            map.put("code", "OK");
-            log.debug("End Adding prestation");
-            return Response.status(HttpServletResponse.SC_OK).entity(map).build();
-        } catch (ServiceException e) {
-            log.error("Error while adding prestation");
-            return Response.status(HttpServletResponse.SC_OK).entity(e.toMap()).build();
+
+        VersementsResponse versements = businessContratClientMS.loadVersements(numCat, police, matricule);
+
+        DocumentGenerationRequest generationRequest = new DocumentGenerationRequest();
+        generationRequest.setFormat("PDF");
+
+        switch (versements.getCategorieParente()) {
+            case "BANCASS":
+                BancassDocumentDTO bancass = VersementMapper.mapToBancass(versements);
+                generationRequest.setCode("ATTESTATION_VERSEMENT_BANCASS");
+                generationRequest.setData(bancass.toMap());
+                break;
+
+            case "GROUPE":
+                GroupDocumentDTO group = VersementMapper.mapToGroup(versements);
+                generationRequest.setCode("ATTESTATION_VERSEMENT_GROUPE");
+                generationRequest.setData(group.toMap());
+                break;
+
+            case "INDIVIDUAL":
+                IndividualDocumentDTO individual = VersementMapper.mapToIndividual(versements);
+                generationRequest.setCode("ATTESTATION_VERSEMENT_INDIVIDUAL");
+                generationRequest.setData(individual.toMap());
+                break;
+
+            default:
+                throw new TechnicalException("Categorie non supportée");
         }
 
+        PrintingDownloadOutputDTO generated = printingClientMS.generateDocument(generationRequest);
+        log.info("End downloadContractVersement: fileName={}", generated.getFileName());
+        return generated;
     }
 
-public class PrestationFormBean {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class DocumentGenerationRequest {
+    private String code;
 
-    private byte[] data;
-    private String prestation;
+    private String format;
 
-    public byte[] getData() {
-        return data;
-    }
-
-    @FormParam("releveIdentiteBancaire")
-    @PartType("application/octet-stream")
-    public void setData(byte[] data) {
-        this.data = data;
-    }
-
-
-    @FormParam("prestation")
-    @PartType("text/plain")
-    public void setPrestation(String prestation) {
-        this.prestation = prestation;
-    }
-
-    public String getPrestation() {
-        return prestation;
-    }
-
-
+    private Map<String, Object> data;
 }
 
-public void addPrestation(PrestationFormBean prestationFormBean, String login) throws IOException, ServiceException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        PrestationBean prestation = objectMapper.readValue(prestationFormBean.getPrestation(), PrestationBean.class);
-        if (prestationFormBean.getData() != null){
-            FileValidationUtil.validateUploadedFile(prestationFormBean.getData(), Integer.parseInt(max_file_size), prestation.getFileExt());
-        }
-        Customer customer = customerService.findByUsername(login);
-        String fileName = "";
-        logger.debug(" start addPrestation service prestation <" + prestation.toString() + ">");
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class BancassDocumentDTO {
+    private String civilite;
+    private String nom;
+    private String prenom;
+    private String adresse1;
+    private String adresse2;
+    private String ville;
+    private String numeroAdhesion;
+    private String dateEffet;
+    private String libelleContrat;
+    private String numeroContrat;
+    private List<Map<String,Object>> echeances;
 
-        /*********** Start test RG**********************/
-        checkFieldDemandePrestation(customer, prestation);
-
-        Contract contract = contractDao.getContract(customer.getCin(), prestation.getNumCat(), prestation.getPolice());
-
-        checkContractNanti(contract);
-
-        checkRGAvance(prestation, customer);
-
-        checkRGRachatPartiel(prestation, contract);
-
-        if (Constants.VIREMENT.equals(prestation.getModeReglement())) {
-            logger.debug(" start test cas VIREMENT");
-
-            if (org.apache.commons.lang.StringUtils.isBlank(prestation.getNumeroCompteBancaire())) {
-                logger.error("Error while adding prestation FIELD_N_COMPTE_EMPTY");
-                throw new ServiceException(ServiceExceptionCode.FIELD_N_COMPTE_EMPTY);
-            }
-            if (!prestation.getNumeroCompteBancaire().matches("[0-9]+")) {
-                logger.error("Error while adding prestation FIELD_N_COMPTE_ONLY_DIGITS");
-                throw new ServiceException(ServiceExceptionCode.FIELD_N_COMPTE_ONLY_DIGITS);
-            }
-            if (prestation.getNumeroCompteBancaire().length() != 24) {
-                logger.error("Error while adding prestation FIELD_N_COMPTE_EXACT_24");
-                throw new ServiceException(ServiceExceptionCode.FIELD_N_COMPTE_EXACT_24);
-            }
-            if (prestationFormBean.getData() == null) {
-                logger.error("Error while adding prestation FIELD_FILE_EMPTY");
-                throw new ServiceException(ServiceExceptionCode.FIELD_FILE_EMPTY);
-            }
-            if ((prestationFormBean.getData().length / 1000000) > Integer.parseInt(max_file_size)) {
-                logger.error("Error while adding prestation FIELD_FILE_TOO_LARGE");
-                throw new ServiceException(ServiceExceptionCode.FIELD_FILE_TOO_LARGE);
-            }
-            fileName = generatePrestationFileName(prestation);
-            ftpFileUpload.upload(prestationFormBean.getData(), fileName, PRESTATION_FOLDER);
-            logger.debug(" end test cas VIREMENT");
-        }
-        /************** END test RG ************/
-
-        // create prestation
-        createPrestation(prestation, customer, fileName, contract);
-
+public Map<String,Object> toMap() {
+        Map<String,Object> map = new HashMap<>();
+        map.put("civilite", civilite);
+        map.put("nom", nom);
+        map.put("prenom", prenom);
+        map.put("adresse1", adresse1);
+        map.put("adresse2", adresse2);
+        map.put("ville", ville);
+        map.put("numeroAdhesion", numeroAdhesion);
+        map.put("dateEffet", dateEffet);
+        map.put("libelleContrat", libelleContrat);
+        map.put("numeroContrat", numeroContrat);
+        map.put("echeances", echeances);
+        return map;
     }
+}
 
-/**
-     * Validates uploaded file with enhanced security controls
-     *
-     * @param data           The file data as byte array
-     * @param maxFileSize    Maximum allowed file size in bytes
-     * @param givenExtension The expected file extension (optional)
-     * @throws TechnicalException if validation fails
-     */
-    public static void validateUploadedFile(byte[] data, Integer maxFileSize, String givenExtension) {
-        logger.info("Starting file validation. Max size allowed: {}MB", maxFileSize);
-
-        // Basic null/empty validation
-        if (data == null || data.length == 0) {
-            logger.error("Validation failed: File is null or empty");
-            throw new TechnicalException("Fichier manquant ou vide.", "erreur.technique.fichier.vide");
-        }
-
-        // File size validation
-        logger.info("File size in bytes: {}", data.length);
-        if (data.length > maxFileSize * 1_000_000) {
-            logger.error("Validation failed: File size exceeds {}MB", maxFileSize);
-            throw new TechnicalException("Fichier trop volumineux (> " + maxFileSize + " Mo).", "erreur.technique.fichier.taille");
-        }
-
-        // MIME type detection
-        String mimeType;
-        String extension;
-        try {
-            Tika tika = new Tika();
-            mimeType = tika.detect(data);
-            extension = MimeTypes.getDefaultMimeTypes().forName(mimeType).getExtension();
-            logger.info("Detected MIME type: {}, file extension: {}", mimeType, extension);
-        } catch (Exception e) {
-            logger.error("MIME type detection failed", e);
-            throw new TechnicalException("Impossible de déterminer le type de fichier.", "erreur.technique.fichier.mime");
-        }
-
-        // Content type validation
-        if (!ALLOWED_CONTENT_TYPES.contains(mimeType)) {
-            logger.error("Validation failed: MIME type not allowed - {}", mimeType);
-            throw new TechnicalException("Type MIME non autorisé: " + mimeType, "erreur.technique.fichier.mime");
-        }
-
-        // Extension validation
-        String cleanExtension = extension.replace(".", "").toLowerCase();
-        if (!ALLOWED_EXTENSIONS.contains(cleanExtension)) {
-            logger.error("Validation failed: Extension not allowed - {}", extension);
-            throw new TechnicalException("Extension non autorisée: " + extension, "erreur.technique.fichier.extension");
-        }
-
-        // Given extension validation (if provided)
-        if (givenExtension != null && !givenExtension.trim().isEmpty()) {
-
-            logger.info("Original given extension: {}", givenExtension);
-
-            // Normalize given extension if it's an equivalent
-            if (EXTENSION_EQUIVALENTS.containsKey(givenExtension)) {
-                String mappedExtension = EXTENSION_EQUIVALENTS.get(givenExtension);
-                logger.info("Normalized extension: {} -> {}", givenExtension, mappedExtension);
-                givenExtension = mappedExtension;
-            }
-
-            String cleanGivenExtension = validateAndCleanExtension(givenExtension);
-
-            if (!cleanExtension.equals(cleanGivenExtension)) {
-                logger.error("Validation failed: Given extension {} does not match detected extension {}",
-                        givenExtension, extension);
-                throw new TechnicalException("Extension fournie (" + givenExtension + ") ne correspond pas au type détecté (" + extension + ")",
-                        "erreur.technique.fichier.extension.mismatch");
-            }
-        }
-
-        // Magic bytes validation
-        if (!validateMagicBytes(data, mimeType)) {
-            logger.error("Validation failed: Magic bytes validation failed for MIME type {}", mimeType);
-            throw new TechnicalException("Structure du fichier invalide ou corrompue", "erreur.technique.fichier.structure");
-        }
-
-        // Malicious content detection
-        if (containsMaliciousContent(data)) {
-            logger.error("Validation failed: Potentially malicious content detected");
-            throw new TechnicalException("Contenu potentiellement malveillant détecté", "erreur.technique.fichier.malveillant");
-        }
-
-        logger.info("File validation passed: MIME type [{}], extension [{}], size {} bytes",
-                new Object[]{mimeType, extension, data.length});
-    }
-
-private void checkFieldDemandePrestation(Customer customer, PrestationBean prestation) throws ServiceException {
-        if (customer == null) {
-            logger.error("Error while adding prestation CUSTOMER_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.CUSTOMER_EMPTY);
-        }
-        /* test if nom  prenom is empty */
-        if (org.apache.commons.lang.StringUtils.isBlank(prestation.getNomPrenom())) {
-            logger.error("Error while adding prestation FIELD_LAST_NAME_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.FIELD_LAST_NAME_EMPTY);
-        }
-
-        /* test if police is empty */
-        if (org.apache.commons.lang.StringUtils.isBlank(prestation.getPolice())) {
-            logger.error("Error while adding prestation FIELD_POLICE_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.FIELD_POLICE_EMPTY);
-        }
-        if (prestation.getNumCat() == null) {
-            logger.error("Error while adding prestation NUMCAT_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.NUMCAT_EMPTY);
-        }
-        if (prestation.isVersementEntreprise() && org.apache.commons.lang.StringUtils.isBlank(prestation.getNomEntreprise())) {
-            logger.error("Error while adding prestation FIELD_ENTREPRISE_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.FIELD_ENTREPRISE_EMPTY);
-        }
-        /* test if email is valide */
-        if (!org.apache.commons.lang.StringUtils.isBlank(prestation.getEmail()) && !prestation.getEmail().matches(
-                "[a-zA-Z0-9\\+\\.\\_\\%\\-\\+]{1,256}\\@[a-zA-Z0-9][a-zA-Z0-9\\-]{0,64}(\\.[a-zA-Z0-9][a-zA-Z0-9\\-]{0,25})+"
-        )) {
-            logger.error("Error while adding prestation FIELD_EMAIL_FORMAT_ERROR");
-            throw new ServiceException(ServiceExceptionCode.FIELD_EMAIL_FORMAT_ERROR);
-        }
-
-        /* test if date  birthady is empty */
-        if (customer.getDateNaissance() == null) {
-            logger.error("Error while adding prestation FIELD_BIRTHDATE_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.FIELD_BIRTHDATE_EMPTY);
-        }
-        /* test if date souscription is empty */
-        if (prestation.getDateSous() == null) {
-            logger.error("Error while adding prestation FIELD_DATE_SOUSCRIPTION_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.FIELD_DATE_SOUSCRIPTION_EMPTY);
-        }
-    }
-private void checkContractNanti(Contract contract) throws ServiceException {
-        logger.debug(" start test contract ");
-
-        if (contract == null) {
-            logger.error("Error while adding prestation CONTRACT_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.CONTRACT_EMPTY);
-        }
-        logger.debug(" contract <" + contract.toString() + ">");
-
-        if (contract.getDefntsm() != null && contract.getNtsmt()) {
-            logger.error("Error while adding prestation CONTRACT_NANTI");
-            throw new ServiceException(ServiceExceptionCode.CONTRACT_NANTI);
-        }
-        logger.debug(" end test contract ");
-    }
-private void checkRGAvance(PrestationBean prestation, Customer customer) throws ServiceException {
-        /* calcule age et anciente */
-        if (Constants.AVANCE.equals(prestation.getTypeProcedure())) {
-            logger.debug("start test cas avance");
-            logger.debug("arg prestation <" + prestation.toString() + ">");
-            logger.debug("arg customer <" + customer.toString() + ">");
-
-            int age = Utils.getYears(customer.getDateNaissance());
-            int dureContart = Utils.getYears(prestation.getDateSous());
-            logger.debug("age <" + age + ">");
-            logger.debug("dureContart <" + dureContart + ">");
-            if (age < 50) {
-                logger.error("Error while adding prestation AGE_CRITERIA");
-                throw new ServiceException(ServiceExceptionCode.AGE_CRITERIA);
-            }
-            if (dureContart < 8) {
-                logger.error("Error while adding prestation DURE_CONTRAT_CRITERIA");
-                throw new ServiceException(ServiceExceptionCode.DURE_CONTRAT_CRITERIA);
-            }
-            //RG calcul 80%
-            float montant = calculePercentage(prestation.getMtencour(), 80);
-            logger.debug("montant <" + montant + ">");
-            if (!prestation.isValeurMaximale()) {
-                if (prestation.getMantantOperation() > montant) {
-                    logger.error("Error while adding prestation MONTANT_SUPERIEUR_80_ERROR");
-                    throw new ServiceException(ServiceExceptionCode.MONTANT_SUPERIEUR_80_ERROR);
-                }
-            } else {
-                prestation.setMantantOperation(montant);
-            }
-            //RG avance non rembourssé
-            if (prestation.getMtavce() > 0) {
-                logger.error("Error while adding prestation AVANCE_NON_REMBOURSE_ERROR");
-                throw new ServiceException(ServiceExceptionCode.AVANCE_NON_REMBOURSE_ERROR);
-            }
-            logger.debug("end test cas avance");
-        }
-    }
-
-    private void checkRGRachatPartiel(PrestationBean prestation, Contract contract) throws ServiceException {
-
-        if (Constants.RACHAT_PARTIEL.equals(prestation.getTypeProcedure())) {
-            logger.debug("start test cas RACHAT_PARTIEL arg prestation <" + prestation.toString() + ">");
-            logger.debug("start test cas RACHAT_PARTIEL arg  contart <" + contract.toString() + ">");
-            //RG calcul 50%
-            float montant = calculePercentage(prestation.getMtencour(), 50);
-            logger.debug("montant <" + montant + ">");
-            if (!prestation.isValeurMaximale()) {
-                if (prestation.getMantantOperation() > montant) {
-                    logger.error("Error while adding prestation MONTANT_SUPERIEUR_50_ERROR");
-                    throw new ServiceException(ServiceExceptionCode.MONTANT_SUPERIEUR_50_ERROR);
-                }
-            } else {
-                prestation.setMantantOperation(montant);
-            }
-
-            //RG avance encours
-            if (prestation.getMtavce() > 0) {
-                logger.error("Error while adding prestation AVANCE_ENCOURS_ERROR");
-                throw new ServiceException(ServiceExceptionCode.AVANCE_ENCOURS_ERROR);
-            }
-
-            // RG nombre de rachat partiel
-            if (contract.getNbrachat() != null && contract.getNbrachat() > 3) {
-                logger.error("Error while adding prestation NOMBRE_RACHAT_ERROR");
-                throw new ServiceException(ServiceExceptionCode.NOMBRE_RACHAT_ERROR);
-            }
-            logger.debug("end test cas RACHAT_PARTIEL");
-        }
-    }
-
-private String generatePrestationFileName(PrestationBean prestation) {
-        return "Prestation_" + Calendar.getInstance().getTime().getTime() + "." + prestation.getFileExt();
-    }
-private void createPrestation(PrestationBean prestation, Customer customer, String fileName, Contract contract) {
-        String uniqueID = UUID.randomUUID().toString();
-        /* instancie la date*/
-        Date date = new Date(System.currentTimeMillis());
-
-        /*instancie la trace*/
-        logger.debug("start instancie la trace");
-
-        HistoryPrestation historyPrestation = new HistoryPrestation();
-        historyPrestation.setDateModification(date);
-        historyPrestation.setStatut(Constants.DEMANDE_MOBILE);
-        historyPrestation.setModifierPar("User Mobile");
-        logger.debug("start add prestation");
-        Prestation prestationToSave = new Prestation(prestation.isVersementEntreprise(), prestation.getNomEntreprise(),
-                prestation.isValeurMaximale(), prestation.getMantantOperation(), prestation.getModeReglement(),
-                date, date, prestation.getNumCat(), prestation.getPolice(),
-                Constants.DEMANDE_MOBILE, prestation.getTypeProcedure(), customer.getCin(), customer.getLogin(), uniqueID);
-        if (!"".equals(fileName)) {
-            prestationToSave.setReleveIdentiteBancaire(ma_marocainevie_selfcare_mobile_url_img_prestations + fileName);
-        }
-
-        prestationToSave.setUsr(generateUsr(customer));
-        prestationToSave.setNumeroCompteBancaire(prestation.getNumeroCompteBancaire());
-        prestationToSave.setTyp(generateTyp(prestation.getTypeProcedure()));
-        prestationToSave.setToken(Utils.generateToken());
-        prestationToSave.setLibNumCat(contract.getLIBNUMCAT());
-        Prestation prestationSaved = prestationDao.addPrestation(prestationToSave);
-
-        logger.debug("end add prestation");
-
-        customer.setEmail(prestation.getEmail());
-        customerDao.update(customer);
-        /* ajout la trace */
-        historyPrestation.setPrestation(prestationSaved);
-        historyPrestationService.addHistoryPrestation(historyPrestation);
-        logger.debug("end instancie la trace");
-    }
-
-public boolean upload(byte[] image, String fileName, String dossier) throws ServiceException {
-        log.info("FTP upload initiated : fileName = {}, target folder = {}", fileName, dossier);
-        String ftpBaseDirectory = ma_marocainevie_selfcare_mobile_directoryBase + dossier;
-        String ftpLogin = ma_marocainevie_selfcare_mobile_login;
-        String ftpPassword = ma_marocainevie_selfcare_mobile_password;
-        String ftpServer = ma_marocainevie_selfcare_mobile_server;
-        String ftpPort = ma_marocainevie_selfcare_mobile_port;
-        ftpPort = ftpPort != null && !ftpPort.isEmpty() ? ftpPort : "21";
-        String ftpTimeout = ma_marocainevie_selfcare_mobile_timeout;
-        String ftpCertFile = ma_marocainevie_selfcare_mobile_cert;
-
-        if (ftpCertFile != null && ftpCertFile.isEmpty()) {
-            ftpCertFile = null;
-            log.info("FTP cert file was empty, reset to null");
-        }
-
-        if (ftpPassword != null && ftpPassword.isEmpty()) {
-            ftpPassword = null;
-            log.info("FTP password was empty, reset to null");
-        }
-        log.info("Delegating to internal upload handler");
-        return upload(image, fileName, ftpBaseDirectory, ftpLogin, ftpPassword, ftpCertFile, ftpServer, ftpPort, ftpTimeout);
-    }
+public class VersementsSituation {
+private String civilite;
+    private String nom;
+    private String prenom;
+    private String adresse1;
+    private String adresse2;
+    private String ville;
+    private String pays;
+    private Long categorie;
+    private String categorieParente;
+    private Long numContrat;
+    private Long police;
+    private Long matricule;
+    private String libCategore;
+    private LocalDate dateEffet;
+    private String contractant;
+    private Double totalVersements;
+    private Double avanceNonRemboursees;
+    private Double situationBrute;
+    private Double situationNette;
+    private Double montantIR;
+    private LocalDate derniereEcheancePayee;
+    private Double cotisationPatronale;
+    private Double cotisationSalariale;
+}
 
 
-@Value("${ma_marocainevie_selfcare_mobile_directoryBase}")
-    private String ma_marocainevie_selfcare_mobile_directoryBase;
-
-    @Value("${ma_marocainevie_selfcare_mobile_login}")
-    private String ma_marocainevie_selfcare_mobile_login;
-
-    @Value("${ma_marocainevie_selfcare_mobile_password}")
-    private String ma_marocainevie_selfcare_mobile_password;
-
-    @Value("${ma_marocainevie_selfcare_mobile_cert}")
-    private String ma_marocainevie_selfcare_mobile_cert;
-
-    @Value("${ma_marocainevie_selfcare_mobile_server}")
-    private String ma_marocainevie_selfcare_mobile_server;
-
-    @Value("${ma_marocainevie_selfcare_mobile_port}")
-    private String ma_marocainevie_selfcare_mobile_port;
-
-    @Value("${ma_marocainevie_selfcare_mobile_timeout}")
-    private String ma_marocainevie_selfcare_mobile_timeout;
-
-
-@Entity
-@Table(name = "prestation")
-public class Prestation extends LMVObject {
-    private static final long serialVersionUID = -7793818543175177924L;
-
-    private Integer id;
-    private String releveIdentiteBancaire;
-    private Boolean versementEntreprise;
-    private String nomEntreprise;
-    private Boolean valeurMaximale;
-    private float mantantOperation;
-    private String modeReglement;
-    private String numeroCompteBancaire;
-    private Date dateCreation;
-    private Date dateModification;
-    private Integer numcat;
-    private String police;
-    private String codsit;
-    private String typePrestation;
-    private String cin;
-    private String login;
-    private String prestationUid;
-    private String quittance;
-    private java.util.Date dateTransfert;
-    private String usr;
-    private String typ;
-    private String token;
-    private String commentaire;
-    private String libNumCat;}
