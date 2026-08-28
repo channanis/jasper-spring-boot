@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd"
+              name="situation_brute_nette_individuelle"
+              pageWidth="595" pageHeight="842"
+              columnWidth="535" leftMargin="30" rightMargin="30"
+              topMargin="30" bottomMargin="30"
+              uuid="f6a7b8c9-d0e1-42f3-4a5b-6c7d8e9f0a1b">
+
+    <!-- Document mono-page, sans liste répétée : le Strategy passe une Collection à 1 élément
+         (ex. List.of(new Object())) pour que la bande "detail" s'imprime exactement une fois. -->
+    <property name="net.sf.jasperreports.export.xlsx.detect.cell.type" value="true"/>
+
+    <!-- ===================== PARAMETRES ===================== -->
+    <parameter name="nomAssure" class="java.lang.String"/>
+    <parameter name="adresse1Assure" class="java.lang.String"/>
+    <parameter name="adresse2Assure" class="java.lang.String"/>
+    <parameter name="villeAssure" class="java.lang.String"/>
+    <parameter name="numeroCategorie" class="java.lang.String"/>
+    <parameter name="numeroBase" class="java.lang.String"/>
+    <parameter name="dateSysteme" class="java.lang.String"/>
+    <parameter name="derniereEcheance" class="java.lang.String"/>
+    <!-- "mont" du modèle d'origine : Net à payer, réutilisé dans le paragraphe d'intro
+         ET dans le détail (Cotisation totale = mont + MTIGR + MTAVNRAC + MTCS) -->
+    <parameter name="montantNet" class="java.math.BigDecimal"/>
+    <parameter name="montantIR" class="java.math.BigDecimal"/>
+    <parameter name="montantAvanceNonRemboursee" class="java.math.BigDecimal"/>
+    <parameter name="montantCotisationSalariale" class="java.math.BigDecimal"/>
+
+    <!-- ===================== DETAIL : tout le document (imprimé une seule fois) ===================== -->
+    <detail>
+        <band height="720">
+
+            <!-- Logo -->
+            <image>
+                <reportElement x="0" y="0" width="180" height="50"/>
+                <imageExpression><![CDATA[getClass().getResourceAsStream("/templates/images/logo.png")]]></imageExpression>
+            </image>
+
+            <!-- Date -->
+            <textField>
+                <reportElement x="0" y="60" width="300" height="14"/>
+                <textFieldExpression><![CDATA["Casablanca, le " + $P{dateSysteme}]]></textFieldExpression>
+            </textField>
+
+            <!-- Votre interlocuteur (gauche) -->
+            <staticText>
+                <reportElement x="0" y="85" width="200" height="14"/>
+                <text><![CDATA[Votre interlocuteur :]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="0" y="99" width="250" height="14"/>
+                <text><![CDATA[Service Relation Clients]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="0" y="113" width="300" height="14"/>
+                <text><![CDATA[Tél : 05 22 26 36 36 (du lundi au vendredi de 8h à 16h30)]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="0" y="127" width="300" height="14"/>
+                <text><![CDATA[E-mail : relationclient.lmv@lamarocainevie.com]]></text>
+            </staticText>
+
+            <!-- Bloc destinataire (droite) : NOMASS / ADR1ASS / ADR2ASS / NOMVIL -->
+            <textField>
+                <reportElement x="330" y="85" width="205" height="15"/>
+                <textFieldExpression><![CDATA[$P{nomAssure}]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="330" y="100" width="205" height="15"/>
+                <textFieldExpression><![CDATA[$P{adresse1Assure} + ","]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="330" y="115" width="205" height="15"/>
+                <textFieldExpression><![CDATA[$P{adresse2Assure} + ","]]></textFieldExpression>
+            </textField>
+            <textField>
+                <reportElement x="330" y="130" width="205" height="15"/>
+                <textFieldExpression><![CDATA[$P{villeAssure}]]></textFieldExpression>
+            </textField>
+
+            <!-- Contractant (ligne vide, tel qu'affiché sur le modèle d'origine) -->
+            <staticText>
+                <reportElement x="0" y="180" width="535" height="16"/>
+                <textElement><font isBold="true"/></textElement>
+                <text><![CDATA[Contractant :]]></text>
+            </staticText>
+
+            <!-- Objet -->
+            <textField>
+                <reportElement x="0" y="200" width="535" height="16"/>
+                <textElement><font isBold="true"/></textElement>
+                <textFieldExpression><![CDATA["Objet        :  Situation de votre Police n° " + $P{numeroCategorie} + "/ " + $P{numeroBase} + "  (*)"]]></textFieldExpression>
+            </textField>
+
+            <!-- Contractant (répété avec valeur, tel qu'affiché sur le modèle d'origine) -->
+            <textField>
+                <reportElement x="0" y="220" width="535" height="16"/>
+                <textElement><font isBold="true"/></textElement>
+                <textFieldExpression><![CDATA["Contractant :  " + $P{nomAssure}]]></textFieldExpression>
+            </textField>
+
+            <!-- Corps de lettre -->
+            <staticText>
+                <reportElement x="0" y="255" width="535" height="14"/>
+                <text><![CDATA[Monsieur/Madame,]]></text>
+            </staticText>
+            <textField isStretchWithOverflow="true" pattern="#,##0.00">
+                <reportElement x="0" y="271" width="535" height="45"/>
+                <textElement><font size="10"/></textElement>
+                <textFieldExpression><![CDATA["Nous faisons suite à votre demande, et vous informons que compte tenu de la dernière échéance payée " + $P{derniereEcheance} + ", la situation de l'épargne capitalisée de votre police citée en objet est de " + ($P{montantNet} == null ? "" : $P{montantNet}.toPlainString()) + " DH détaillée comme suit : \""]]></textFieldExpression>
+            </textField>
+
+            <!-- Tableau montants -->
+            <rectangle>
+                <reportElement x="0" y="330" width="535" height="80"/>
+            </rectangle>
+            <line>
+                <reportElement x="260" y="330" width="0" height="80"/>
+            </line>
+            <line>
+                <reportElement x="440" y="330" width="0" height="80"/>
+            </line>
+            <line>
+                <reportElement x="0" y="350" width="535" height="0"/>
+            </line>
+            <line>
+                <reportElement x="0" y="370" width="535" height="0"/>
+            </line>
+            <line>
+                <reportElement x="0" y="390" width="535" height="0"/>
+            </line>
+
+            <staticText>
+                <reportElement x="5" y="330" width="250" height="20"/>
+                <textElement verticalAlignment="Middle"><font isBold="true"/></textElement>
+                <text><![CDATA[Cotisation totale :]]></text>
+            </staticText>
+            <textField pattern="#,##0.00">
+                <reportElement x="265" y="330" width="170" height="20"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font isBold="true" isItalic="true"/></textElement>
+                <textFieldExpression><![CDATA[($P{montantNet} == null ? java.math.BigDecimal.ZERO : $P{montantNet})
+                    .add($P{montantIR} == null ? java.math.BigDecimal.ZERO : $P{montantIR})
+                    .add($P{montantAvanceNonRemboursee} == null ? java.math.BigDecimal.ZERO : $P{montantAvanceNonRemboursee})
+                    .add($P{montantCotisationSalariale} == null ? java.math.BigDecimal.ZERO : $P{montantCotisationSalariale})]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="445" y="330" width="85" height="20"/>
+                <textElement verticalAlignment="Middle"><font isBold="true"/></textElement>
+                <text><![CDATA[DH]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="5" y="350" width="250" height="20"/>
+                <textElement verticalAlignment="Middle"><font isBold="true"/></textElement>
+                <text><![CDATA[Avance non remboursée :]]></text>
+            </staticText>
+            <textField pattern="#,##0.00">
+                <reportElement x="265" y="350" width="170" height="20"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font isBold="true" isItalic="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{montantAvanceNonRemboursee}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="445" y="350" width="85" height="20"/>
+                <textElement verticalAlignment="Middle"><font isBold="true"/></textElement>
+                <text><![CDATA[DH]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="5" y="370" width="250" height="20"/>
+                <textElement verticalAlignment="Middle"><font isBold="true"/></textElement>
+                <text><![CDATA[IR ( Impôt sur Revenu ) :]]></text>
+            </staticText>
+            <textField pattern="#,##0.00">
+                <reportElement x="265" y="370" width="170" height="20"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font isBold="true" isItalic="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{montantIR}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="445" y="370" width="85" height="20"/>
+                <textElement verticalAlignment="Middle"><font isBold="true"/></textElement>
+                <text><![CDATA[DH]]></text>
+            </staticText>
+
+            <staticText>
+                <reportElement x="5" y="390" width="250" height="20"/>
+                <textElement verticalAlignment="Middle"><font isBold="true"/></textElement>
+                <text><![CDATA[Net à payer :]]></text>
+            </staticText>
+            <textField pattern="#,##0.00">
+                <reportElement x="265" y="390" width="170" height="20"/>
+                <textElement textAlignment="Center" verticalAlignment="Middle"><font isBold="true" isItalic="true"/></textElement>
+                <textFieldExpression><![CDATA[$P{montantNet}]]></textFieldExpression>
+            </textField>
+            <staticText>
+                <reportElement x="445" y="390" width="85" height="20"/>
+                <textElement verticalAlignment="Middle"><font isBold="true"/></textElement>
+                <text><![CDATA[DH]]></text>
+            </staticText>
+
+            <!-- Formule de politesse -->
+            <textField isStretchWithOverflow="true">
+                <reportElement x="0" y="425" width="535" height="30"/>
+                <text><![CDATA[Nous vous en souhaitons bonne réception et vous prions d'agréer, Monsieur/Madame, l'expression de nos sincères salutations.]]></text>
+            </textField>
+
+            <staticText>
+                <reportElement x="0" y="465" width="535" height="14"/>
+                <textElement><font isItalic="true" size="9"/></textElement>
+                <text><![CDATA[(*) Sauf erreur ou omission de notre part.]]></text>
+            </staticText>
+
+            <!-- Signature -->
+            <staticText>
+                <reportElement x="330" y="520" width="205" height="14"/>
+                <textElement textAlignment="Center"><font isBold="true"/></textElement>
+                <text><![CDATA[Département Relations Clients
+La Marocaine Vie]]></text>
+            </staticText>
+            <image>
+                <reportElement x="330" y="550" width="205" height="70"/>
+                <imageExpression><![CDATA[getClass().getResourceAsStream("/templates/images/signature.png")]]></imageExpression>
+            </image>
+
+            <!-- Pied de page -->
+            <staticText>
+                <reportElement x="0" y="630" width="200" height="12"/>
+                <textElement><font size="7"/></textElement>
+                <text><![CDATA[C0 - PUBLIC]]></text>
+            </staticText>
+            <line>
+                <reportElement x="0" y="644" width="535" height="0"/>
+            </line>
+            <staticText>
+                <reportElement x="0" y="650" width="180" height="50"/>
+                <textElement><font size="7"/></textElement>
+                <text><![CDATA[37, Boulevard Moulay Youssef
+Casablanca
+Maroc]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="180" y="650" width="180" height="50"/>
+                <textElement><font size="7"/></textElement>
+                <text><![CDATA[Tél : (212) 05 22 43 11 00
+Fax : (212) 05 22 26 19 71
+lamarocainevie@lamarocainevie.com
+www.lamarocainevie.com]]></text>
+            </staticText>
+            <staticText>
+                <reportElement x="360" y="650" width="175" height="60"/>
+                <textElement><font size="7"/></textElement>
+                <text><![CDATA[Entreprise régie par la loi n°17-99 portant code des assurances
+Société Anonyme au Capital de : 231.750.000 DH - RC 36 675
+Patente 35504343 - CNSS 177 5652
+Identification Fiscale 01085220
+ICE 001526699000053]]></text>
+            </staticText>
+        </band>
+    </detail>
+
+</jasperReport>

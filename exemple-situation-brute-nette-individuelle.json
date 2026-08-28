@@ -1,0 +1,17 @@
+{
+  "code": "SITUATION_BRUTE_NETTE_INDIVIDUELLE",
+  "format": "PDF",
+  "data": {
+    "nomAssure": "M. ALAOUI Karim",
+    "adresse1Assure": "Résidence Al Amal, Apt 12",
+    "adresse2Assure": "Rue des Orangers",
+    "villeAssure": "Casablanca",
+    "numeroCategorie": "VR",
+    "numeroBase": "6365",
+    "derniereEcheance": "2026-03-05",
+    "montantNet": 42300.00,
+    "montantIR": 3200.00,
+    "montantAvanceNonRemboursee": 0,
+    "montantCotisationSalariale": 27000.00
+  }
+}
