@@ -104,6 +104,72 @@ public Map<String,Object> toMap() {
     }
 }
 
+public class VersementMapper {
+
+    public static BancassDocumentDTO mapToBancass(VersementsResponse v) {
+        BancassDocumentDTO dto = new BancassDocumentDTO();
+        dto.setCivilite(v.getCivilite());
+        dto.setNom(v.getNom());
+        dto.setPrenom(v.getPrenom());
+        dto.setAdresse1(v.getAdresse1());
+        dto.setAdresse2(v.getAdresse2());
+        dto.setVille(v.getVille());
+        dto.setNumeroAdhesion(v.getNumContrat() != null ? v.getNumContrat().toString() : null);
+        dto.setDateEffet(v.getDateEffet() != null ? v.getDateEffet() : null);
+        dto.setLibelleContrat(v.getLibCategore());
+        dto.setNumeroContrat(v.getNumContrat() != null ? v.getNumContrat().toString() : null);
+        dto.setEcheances(mapPayments(v.getVersements()));
+        return dto;
+    }
+
+    public static GroupDocumentDTO mapToGroup(VersementsResponse v) {
+        GroupDocumentDTO dto = new GroupDocumentDTO();
+        dto.setCivilite(v.getCivilite());
+        dto.setNom(v.getNom());
+        dto.setAdresse1(v.getAdresse1());
+        dto.setAdresse2(v.getAdresse2());
+        dto.setVille(v.getVille());
+        dto.setPays(v.getPays());
+        dto.setNumeroAdhesion(v.getMatricule() != null ? v.getMatricule().toString() : null);
+        dto.setLibelleContrat(v.getLibCategore());
+        dto.setNumeroPolice(v.getPolice() != null ? v.getPolice().toString() : null);
+        dto.setEcheances(mapPayments(v.getVersements()));
+        return dto;
+    }
+
+    public static IndividualDocumentDTO mapToIndividual(VersementsResponse v) {
+        IndividualDocumentDTO dto = new IndividualDocumentDTO();
+        dto.setCivilite(v.getCivilite());
+        dto.setNom(v.getNom());
+        dto.setPrenom(v.getPrenom());
+        dto.setAdresse1(v.getAdresse1());
+        dto.setAdresse2(v.getAdresse2());
+        dto.setVille(v.getVille());
+        dto.setPays(v.getPays());
+        dto.setNumeroAdhesion(v.getNumContrat() != null ? v.getNumContrat().toString() : null);
+        dto.setLibelleContrat(v.getLibCategore());
+        dto.setEcheances(mapPayments(v.getVersements()));
+        return dto;
+    }
+
+    public static List<Map<String,Object>> mapPayments(List<Payment> payments) {
+        List<Map<String,Object>> list = new ArrayList<>();
+        if (payments != null) {
+            for (Payment p : payments) {
+                Map<String,Object> line = new HashMap<>();
+                line.put("echeance", p.getEcheance() != null ? p.getEcheance() : null);
+                line.put("montantVersement", p.getMontant());
+                line.put("dateEncaissement", p.getDateEncaisement() != null ? p.getDateEncaisement().toString() : null);
+                line.put("modePaiement", p.getModePaiement());
+                list.add(line);
+            }
+        }
+        return list;
+    }
+
+}
+
+
 public class VersementsSituation {
 private String civilite;
     private String nom;
@@ -130,4 +196,79 @@ private String civilite;
     private Double cotisationSalariale;
 }
 
+
+{
+  "code": "SITUATION_BRUTE_EPARGNE_BANCASS",
+  "format": "PDF",
+  "data": {
+    "titre": "M.",
+    "nom": "ALAOUI",
+    "prenom": "Karim",
+    "adresse1": "Résidence Al Amal, Apt 12",
+    "adresse2": "Rue des Orangers, Casablanca",
+    "categorie": "VR",
+    "police": "AD-123456",
+    "dateEffet": "2020-06-01",
+    "svk": 0,
+    "mtcot": 27000.00,
+    "mtavance": 0,
+    "vprim": 29450.75
+  }
+}
+{
+  "code": "SITUATION_BRUTE_GROUPE",
+  "format": "PDF",
+  "data": {
+    "nom": "ACME INDUSTRIES",
+    "adresse1": "Zone Industrielle Sidi Bernoussi",
+    "adresse2": "Lot 45",
+    "ville": "Casablanca",
+    "nomContractant": "ACME INDUSTRIES",
+    "categorie": "GRP",
+    "police": "POL-2026-001",
+    "matricule": "MAT-9087",
+    "derniereEcheanceCapitalisee": "2026-03-05",
+    "montantNet": 118450.00,
+    "sommeCotisationPeriode": 75000.00,
+    "sommeCotisationPatronale": 45000.00,
+    "sommeCotisationSalariale": 30000.00,
+    "montantAvanceNonRemboursee": 0,
+    "montant": 118450.00
+  }
+}
+{
+  "code": "SITUATION_BRUTE_NETTE_INDIVIDUELLE",
+  "format": "PDF",
+  "data": {
+    "nom": "M. ALAOUI Karim",
+    "adresse1": "Résidence Al Amal, Apt 12",
+    "adresse2": "Rue des Orangers",
+    "ville": "Casablanca",
+    "categorie": "VR",
+    "police": "6365",
+    "derniereEcheance": "2026-03-05",
+    "montantNet": 42300.00,
+    "montantIR": 3200.00,
+    "montantAvanceNonRemboursee": 0,
+    "cotisationTotale": 27000.00
+  }
+}
+{
+  "code": "SITUATION_NETTE_GROUPE",
+  "format": "PDF",
+  "data": {
+    "nom": "ACME INDUSTRIES",
+    "adresse1": "Zone Industrielle Sidi Bernoussi",
+    "adresse2": "Lot 45",
+    "ville": "Casablanca",
+    "categorie": "GRP",
+    "police": "POL-2026-001",
+    "matricule": "MAT-9087",
+    "derniereEcheance": "2026-03-05",
+    "montantNet": 95000.00,
+    "montantIR": 8500.00,
+    "montantAvanceNonRembourseeCapitalisee": 0,
+    "cotisationTotale": 30000.00
+  }
+}
 
