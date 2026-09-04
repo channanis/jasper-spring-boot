@@ -1,422 +1,954 @@
-@Component
-@Path("/private/prestation")
-public class RestPrestation {
-    private static final Logger log = LoggerFactory.getLogger(RestPrestation.class);
-    @Autowired
-    PrestationService prestationService;
+package ma.marocainevie.prestation.domain.model.enums;
 
-    @POST
-    @Path("/demandePrestation")
-    @Produces(MediaType.APPLICATION_JSON)
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response add(@Context HttpServletRequest request, @MultipartForm PrestationFormBean prestationFormBean) throws IOException {
-        FrontUserDetails user = (FrontUserDetails) request.getSession().getAttribute("user");
-        if (user == null) {
-            log.error("Error while  demandePrestation");
-            return Utils.generateResponse();
-        }
-        try {
-            log.debug("Start Adding prestation objet: " + prestationFormBean.getPrestation());
-            log.debug(" Adding prestation file: " + Arrays.toString(prestationFormBean.getData()));
-            prestationService.addPrestation(prestationFormBean,user.getUsername());
-            Map<String, String> map = new HashMap<String, String>();
-            map.put("code", "OK");
-            log.debug("End Adding prestation");
-            return Response.status(HttpServletResponse.SC_OK).entity(map).build();
-        } catch (ServiceException e) {
-            log.error("Error while adding prestation");
-            return Response.status(HttpServletResponse.SC_OK).entity(e.toMap()).build();
-        }
+public enum TypeProcedure {
 
+    AVANCE("A"),
+    RACHAT_PARTIEL("RP"),
+    RACHAT_TOTAL("RT");
+
+    private final String code;
+
+    TypeProcedure(String code) {
+        this.code = code;
     }
 
+    public String code() {
+        return code;
+    }
+}
+package ma.marocainevie.prestation.domain.model.enums;
+
+public enum ModeReglement {
+    VIREMENT,
+    CHEQUE
 }
 
-public class PrestationFormBean {
+package ma.marocainevie.prestation.domain.model.enums;
 
-    private byte[] data;
-    private String prestation;
-
-    public byte[] getData() {
-        return data;
-    }
-
-    @FormParam("releveIdentiteBancaire")
-    @PartType("application/octet-stream")
-    public void setData(byte[] data) {
-        this.data = data;
-    }
-
-
-    @FormParam("prestation")
-    @PartType("text/plain")
-    public void setPrestation(String prestation) {
-        this.prestation = prestation;
-    }
-
-    public String getPrestation() {
-        return prestation;
-    }
-
-
+public enum StatutPrestation {
+    DEMANDE_MOBILE,
+    EN_COURS,
+    VALIDEE,
+    REJETEE,
+    ANNULEE
 }
+package ma.marocainevie.prestation.domain.exception;
 
-@Override
-    public void addPrestation(PrestationFormBean prestationFormBean, String login) throws IOException, ServiceException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        PrestationBean prestation = objectMapper.readValue(prestationFormBean.getPrestation(), PrestationBean.class);
-        if (prestationFormBean.getData() != null){
-            FileValidationUtil.validateUploadedFile(prestationFormBean.getData(), Integer.parseInt(max_file_size), prestation.getFileExt());
-        }
-        Customer customer = customerService.findByUsername(login);
-        String fileName = "";
-        logger.debug(" start addPrestation service prestation <" + prestation.toString() + ">");
+import org.springframework.http.HttpStatus;
 
-        /*********** Start test RG**********************/
-        checkFieldDemandePrestation(customer, prestation);
+public enum PrestationErrorCode {
 
-        Contract contract = contractDao.getContract(customer.getCin(), prestation.getNumCat(), prestation.getPolice());
+    CUSTOMER_EMPTY("Client introuvable", HttpStatus.NOT_FOUND),
+    FIELD_LAST_NAME_EMPTY("Le nom/prénom est obligatoire", HttpStatus.BAD_REQUEST),
+    FIELD_POLICE_EMPTY("Le numéro de police est obligatoire", HttpStatus.BAD_REQUEST),
+    NUMCAT_EMPTY("La catégorie du contrat est obligatoire", HttpStatus.BAD_REQUEST),
+    FIELD_ENTREPRISE_EMPTY("Le nom de l'entreprise est obligatoire pour un versement entreprise", HttpStatus.BAD_REQUEST),
+    FIELD_EMAIL_FORMAT_ERROR("Le format de l'email est invalide", HttpStatus.BAD_REQUEST),
+    FIELD_BIRTHDATE_EMPTY("La date de naissance du client est manquante", HttpStatus.UNPROCESSABLE_ENTITY),
+    FIELD_DATE_SOUSCRIPTION_EMPTY("La date de souscription est obligatoire", HttpStatus.BAD_REQUEST),
 
-        checkContractNanti(contract);
+    FIELD_N_COMPTE_EMPTY("Le numéro de compte bancaire est obligatoire pour un virement", HttpStatus.BAD_REQUEST),
+    FIELD_N_COMPTE_ONLY_DIGITS("Le numéro de compte bancaire doit être numérique", HttpStatus.BAD_REQUEST),
+    FIELD_N_COMPTE_EXACT_24("Le numéro de compte bancaire (RIB) doit contenir exactement 24 chiffres", HttpStatus.BAD_REQUEST),
+    FIELD_FILE_EMPTY("Le relevé d'identité bancaire est obligatoire pour un virement", HttpStatus.BAD_REQUEST),
+    FIELD_FILE_TOO_LARGE("Le fichier dépasse la taille maximale autorisée", HttpStatus.PAYLOAD_TOO_LARGE),
+    FIELD_FILE_INVALID_EXTENSION("Extension de fichier non autorisée", HttpStatus.BAD_REQUEST),
 
-        checkRGAvance(prestation, customer);
+    CONTRACT_EMPTY("Contrat introuvable", HttpStatus.NOT_FOUND),
+    CONTRACT_NANTI("Le contrat est nanti, la demande ne peut pas être traitée", HttpStatus.CONFLICT),
 
-        checkRGRachatPartiel(prestation, contract);
+    AGE_CRITERIA("Le client doit avoir au moins 50 ans pour une avance", HttpStatus.CONFLICT),
+    DURE_CONTRAT_CRITERIA("Le contrat doit avoir au moins 8 ans d'ancienneté pour une avance", HttpStatus.CONFLICT),
+    MONTANT_SUPERIEUR_80_ERROR("Le montant demandé dépasse 80% de l'encours", HttpStatus.CONFLICT),
+    AVANCE_NON_REMBOURSE_ERROR("Une avance non remboursée existe déjà sur ce contrat", HttpStatus.CONFLICT),
 
-        if (Constants.VIREMENT.equals(prestation.getModeReglement())) {
-            logger.debug(" start test cas VIREMENT");
+    MONTANT_SUPERIEUR_50_ERROR("Le montant demandé dépasse 50% de l'encours", HttpStatus.CONFLICT),
+    AVANCE_ENCOURS_ERROR("Une avance est en cours sur ce contrat", HttpStatus.CONFLICT),
+    NOMBRE_RACHAT_ERROR("Le nombre maximum de rachats partiels est atteint", HttpStatus.CONFLICT),
 
-            if (org.apache.commons.lang.StringUtils.isBlank(prestation.getNumeroCompteBancaire())) {
-                logger.error("Error while adding prestation FIELD_N_COMPTE_EMPTY");
-                throw new ServiceException(ServiceExceptionCode.FIELD_N_COMPTE_EMPTY);
-            }
-            if (!prestation.getNumeroCompteBancaire().matches("[0-9]+")) {
-                logger.error("Error while adding prestation FIELD_N_COMPTE_ONLY_DIGITS");
-                throw new ServiceException(ServiceExceptionCode.FIELD_N_COMPTE_ONLY_DIGITS);
-            }
-            if (prestation.getNumeroCompteBancaire().length() != 24) {
-                logger.error("Error while adding prestation FIELD_N_COMPTE_EXACT_24");
-                throw new ServiceException(ServiceExceptionCode.FIELD_N_COMPTE_EXACT_24);
-            }
-            if (prestationFormBean.getData() == null) {
-                logger.error("Error while adding prestation FIELD_FILE_EMPTY");
-                throw new ServiceException(ServiceExceptionCode.FIELD_FILE_EMPTY);
-            }
-            if ((prestationFormBean.getData().length / 1000000) > Integer.parseInt(max_file_size)) {
-                logger.error("Error while adding prestation FIELD_FILE_TOO_LARGE");
-                throw new ServiceException(ServiceExceptionCode.FIELD_FILE_TOO_LARGE);
-            }
-            fileName = generatePrestationFileName(prestation);
-            ftpFileUpload.upload(prestationFormBean.getData(), fileName, PRESTATION_FOLDER);
-            logger.debug(" end test cas VIREMENT");
-        }
-        /************** END test RG ************/
+    PRESTATION_EMPTY("Prestation introuvable", HttpStatus.NOT_FOUND),
+    STATUS_EXIST("Le statut fourni est déjà celui de la prestation", HttpStatus.CONFLICT);
 
-        // create prestation
-        createPrestation(prestation, customer, fileName, contract);
+    private final String defaultMessage;
+    private final HttpStatus httpStatus;
 
-    }
-private String generatePrestationFileName(PrestationBean prestation) {
-        return "Prestation_" + Calendar.getInstance().getTime().getTime() + "." + prestation.getFileExt();
+    PrestationErrorCode(String defaultMessage, HttpStatus httpStatus) {
+        this.defaultMessage = defaultMessage;
+        this.httpStatus = httpStatus;
     }
 
-    private float calculePercentage(float montant, Integer perc) {
-        return (montant * perc) / 100;
+    public String defaultMessage() {
+        return defaultMessage;
     }
 
-    private String generateUsr(Customer customer) {
-        return (!org.apache.commons.lang.StringUtils.isBlank(customer.getNom()) && !org.apache.commons.lang.StringUtils.isBlank(customer.getPrenom())) ? customer.getPrenom().charAt(0) + "." + customer.getNom() : "";
+    public HttpStatus httpStatus() {
+        return httpStatus;
+    }
+}
+package ma.marocainevie.prestation.domain.exception;
+
+public class PrestationBusinessException extends RuntimeException {
+
+    private final PrestationErrorCode errorCode;
+
+    public PrestationBusinessException(PrestationErrorCode errorCode) {
+        super(errorCode.defaultMessage());
+        this.errorCode = errorCode;
     }
 
-    private String generateTyp(String typeProcedure) {
-        if (Constants.AVANCE.equals(typeProcedure)) {
-            return "A";
-        } else if (Constants.RACHAT_PARTIEL.equals(typeProcedure)) {
-            return "RP";
-        } else if (Constants.RACHAT_TOTAL.equals(typeProcedure)) {
-            return "RT";
-        }
-        return "";
+    public PrestationErrorCode errorCode() {
+        return errorCode;
     }
+}
+package ma.marocainevie.prestation.domain.exception;
 
-    private void createPrestation(PrestationBean prestation, Customer customer, String fileName, Contract contract) {
-        String uniqueID = UUID.randomUUID().toString();
-        /* instancie la date*/
-        Date date = new Date(System.currentTimeMillis());
+public class PrestationAccessDeniedException extends RuntimeException {
 
-        /*instancie la trace*/
-        logger.debug("start instancie la trace");
-
-        HistoryPrestation historyPrestation = new HistoryPrestation();
-        historyPrestation.setDateModification(date);
-        historyPrestation.setStatut(Constants.DEMANDE_MOBILE);
-        historyPrestation.setModifierPar("User Mobile");
-        logger.debug("start add prestation");
-        Prestation prestationToSave = new Prestation(prestation.isVersementEntreprise(), prestation.getNomEntreprise(),
-                prestation.isValeurMaximale(), prestation.getMantantOperation(), prestation.getModeReglement(),
-                date, date, prestation.getNumCat(), prestation.getPolice(),
-                Constants.DEMANDE_MOBILE, prestation.getTypeProcedure(), customer.getCin(), customer.getLogin(), uniqueID);
-        if (!"".equals(fileName)) {
-            prestationToSave.setReleveIdentiteBancaire(ma_marocainevie_selfcare_mobile_url_img_prestations + fileName);
-        }
-
-        prestationToSave.setUsr(generateUsr(customer));
-        prestationToSave.setNumeroCompteBancaire(prestation.getNumeroCompteBancaire());
-        prestationToSave.setTyp(generateTyp(prestation.getTypeProcedure()));
-        prestationToSave.setToken(Utils.generateToken());
-        prestationToSave.setLibNumCat(contract.getLIBNUMCAT());
-        Prestation prestationSaved = prestationDao.addPrestation(prestationToSave);
-
-        logger.debug("end add prestation");
-
-        customer.setEmail(prestation.getEmail());
-        customerDao.update(customer);
-        /* ajout la trace */
-        historyPrestation.setPrestation(prestationSaved);
-        historyPrestationService.addHistoryPrestation(historyPrestation);
-        logger.debug("end instancie la trace");
+    public PrestationAccessDeniedException() {
+        super("Token invalide pour cette prestation");
     }
+}
+package ma.marocainevie.prestation.domain.model;
 
-    private void updatePrestation(PrestationRequest prestationRequest, Prestation prestation, String message, long time) {
-        logger.debug("start updatePrestation");
-        Date date = new Date(System.currentTimeMillis());
-        prestation.setCodsit(prestationRequest.getStatut());
-        prestation.setDateModification(date);
-        prestation.setQuittance(prestationRequest.getQuittance());
-        if (!"".equals(message)) {
-            prestation.setCommentaire(Utils.createCommentPrestation(Constants.LMV, message, time));
-        }
-        prestationDao.update(prestation);
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import ma.marocainevie.prestation.domain.model.enums.ModeReglement;
+import ma.marocainevie.prestation.domain.model.enums.StatutPrestation;
+import ma.marocainevie.prestation.domain.model.enums.TypeProcedure;
 
-        logger.debug("end updatePrestation");
-        /*instancie la trace*/
-        logger.debug(" start instancie la trace");
-        HistoryPrestation historyPrestation = new HistoryPrestation();
-        historyPrestation.setDateModification(date);
-        historyPrestation.setStatut(prestationRequest.getStatut());
-        historyPrestation.setModifierPar(Constants.LMV);
-        historyPrestationService.addHistoryPrestation(historyPrestation);
-        logger.debug(" end instancie la trace");
-    }
-
-    private void checkFieldDemandePrestation(Customer customer, PrestationBean prestation) throws ServiceException {
-        if (customer == null) {
-            logger.error("Error while adding prestation CUSTOMER_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.CUSTOMER_EMPTY);
-        }
-        /* test if nom  prenom is empty */
-        if (org.apache.commons.lang.StringUtils.isBlank(prestation.getNomPrenom())) {
-            logger.error("Error while adding prestation FIELD_LAST_NAME_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.FIELD_LAST_NAME_EMPTY);
-        }
-
-        /* test if police is empty */
-        if (org.apache.commons.lang.StringUtils.isBlank(prestation.getPolice())) {
-            logger.error("Error while adding prestation FIELD_POLICE_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.FIELD_POLICE_EMPTY);
-        }
-        if (prestation.getNumCat() == null) {
-            logger.error("Error while adding prestation NUMCAT_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.NUMCAT_EMPTY);
-        }
-        if (prestation.isVersementEntreprise() && org.apache.commons.lang.StringUtils.isBlank(prestation.getNomEntreprise())) {
-            logger.error("Error while adding prestation FIELD_ENTREPRISE_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.FIELD_ENTREPRISE_EMPTY);
-        }
-        /* test if email is valide */
-        if (!org.apache.commons.lang.StringUtils.isBlank(prestation.getEmail()) && !prestation.getEmail().matches(
-                "[a-zA-Z0-9\\+\\.\\_\\%\\-\\+]{1,256}\\@[a-zA-Z0-9][a-zA-Z0-9\\-]{0,64}(\\.[a-zA-Z0-9][a-zA-Z0-9\\-]{0,25})+"
-        )) {
-            logger.error("Error while adding prestation FIELD_EMAIL_FORMAT_ERROR");
-            throw new ServiceException(ServiceExceptionCode.FIELD_EMAIL_FORMAT_ERROR);
-        }
-
-        /* test if date  birthady is empty */
-        if (customer.getDateNaissance() == null) {
-            logger.error("Error while adding prestation FIELD_BIRTHDATE_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.FIELD_BIRTHDATE_EMPTY);
-        }
-        /* test if date souscription is empty */
-        if (prestation.getDateSous() == null) {
-            logger.error("Error while adding prestation FIELD_DATE_SOUSCRIPTION_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.FIELD_DATE_SOUSCRIPTION_EMPTY);
-        }
-    }
-
-    private void checkFieldMajPrestation(Prestation prestation, PrestationRequest prestationRequest, String token) throws ServiceException, AuthenticationExeption {
-        if (prestation == null) {
-            logger.error("majPrestation error PRESTATION_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.PRESTATION_EMPTY);
-        }
-        if (!token.equals(prestation.getToken())) {
-            throw new AuthenticationExeption(AuthenticationExceptionCode.FORBIDDEN);
-        }
-        logger.debug("prestation from database mobile" + prestation.toString());
-        if (prestationRequest.getStatut() != null && prestationRequest.getStatut().equals(prestation.getCodsit())) {
-            logger.error("majPrestation error STATUS_EXIST");
-            throw new ServiceException(ServiceExceptionCode.STATUS_EXIST);
-        }
-    }
-
-    private void checkContractNanti(Contract contract) throws ServiceException {
-        logger.debug(" start test contract ");
-
-        if (contract == null) {
-            logger.error("Error while adding prestation CONTRACT_EMPTY");
-            throw new ServiceException(ServiceExceptionCode.CONTRACT_EMPTY);
-        }
-        logger.debug(" contract <" + contract.toString() + ">");
-
-        if (contract.getDefntsm() != null && contract.getNtsmt()) {
-            logger.error("Error while adding prestation CONTRACT_NANTI");
-            throw new ServiceException(ServiceExceptionCode.CONTRACT_NANTI);
-        }
-        logger.debug(" end test contract ");
-    }
-
-    private void checkRGAvance(PrestationBean prestation, Customer customer) throws ServiceException {
-        /* calcule age et anciente */
-        if (Constants.AVANCE.equals(prestation.getTypeProcedure())) {
-            logger.debug("start test cas avance");
-            logger.debug("arg prestation <" + prestation.toString() + ">");
-            logger.debug("arg customer <" + customer.toString() + ">");
-
-            int age = Utils.getYears(customer.getDateNaissance());
-            int dureContart = Utils.getYears(prestation.getDateSous());
-            logger.debug("age <" + age + ">");
-            logger.debug("dureContart <" + dureContart + ">");
-            if (age < 50) {
-                logger.error("Error while adding prestation AGE_CRITERIA");
-                throw new ServiceException(ServiceExceptionCode.AGE_CRITERIA);
-            }
-            if (dureContart < 8) {
-                logger.error("Error while adding prestation DURE_CONTRAT_CRITERIA");
-                throw new ServiceException(ServiceExceptionCode.DURE_CONTRAT_CRITERIA);
-            }
-            //RG calcul 80%
-            float montant = calculePercentage(prestation.getMtencour(), 80);
-            logger.debug("montant <" + montant + ">");
-            if (!prestation.isValeurMaximale()) {
-                if (prestation.getMantantOperation() > montant) {
-                    logger.error("Error while adding prestation MONTANT_SUPERIEUR_80_ERROR");
-                    throw new ServiceException(ServiceExceptionCode.MONTANT_SUPERIEUR_80_ERROR);
-                }
-            } else {
-                prestation.setMantantOperation(montant);
-            }
-            //RG avance non rembourssé
-            if (prestation.getMtavce() > 0) {
-                logger.error("Error while adding prestation AVANCE_NON_REMBOURSE_ERROR");
-                throw new ServiceException(ServiceExceptionCode.AVANCE_NON_REMBOURSE_ERROR);
-            }
-            logger.debug("end test cas avance");
-        }
-    }
-
-    private void checkRGRachatPartiel(PrestationBean prestation, Contract contract) throws ServiceException {
-
-        if (Constants.RACHAT_PARTIEL.equals(prestation.getTypeProcedure())) {
-            logger.debug("start test cas RACHAT_PARTIEL arg prestation <" + prestation.toString() + ">");
-            logger.debug("start test cas RACHAT_PARTIEL arg  contart <" + contract.toString() + ">");
-            //RG calcul 50%
-            float montant = calculePercentage(prestation.getMtencour(), 50);
-            logger.debug("montant <" + montant + ">");
-            if (!prestation.isValeurMaximale()) {
-                if (prestation.getMantantOperation() > montant) {
-                    logger.error("Error while adding prestation MONTANT_SUPERIEUR_50_ERROR");
-                    throw new ServiceException(ServiceExceptionCode.MONTANT_SUPERIEUR_50_ERROR);
-                }
-            } else {
-                prestation.setMantantOperation(montant);
-            }
-
-            //RG avance encours
-            if (prestation.getMtavce() > 0) {
-                logger.error("Error while adding prestation AVANCE_ENCOURS_ERROR");
-                throw new ServiceException(ServiceExceptionCode.AVANCE_ENCOURS_ERROR);
-            }
-
-            // RG nombre de rachat partiel
-            if (contract.getNbrachat() != null && contract.getNbrachat() > 3) {
-                logger.error("Error while adding prestation NOMBRE_RACHAT_ERROR");
-                throw new ServiceException(ServiceExceptionCode.NOMBRE_RACHAT_ERROR);
-            }
-            logger.debug("end test cas RACHAT_PARTIEL");
-        }
-    }
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "prestation")
-public class Prestation extends LMVObject {
-    private static final long serialVersionUID = -7793818543175177924L;
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class Prestation {
 
-    private Integer id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private String releveIdentiteBancaire;
-    private Boolean versementEntreprise;
+    private boolean versementEntreprise;
     private String nomEntreprise;
-    private Boolean valeurMaximale;
-    private float mantantOperation;
-    private String modeReglement;
+    private boolean valeurMaximale;
+    private float montantOperation;
+
+    @Enumerated(EnumType.STRING)
+    private ModeReglement modeReglement;
+
     private String numeroCompteBancaire;
-    private Date dateCreation;
-    private Date dateModification;
-    private Integer numcat;
+    private LocalDateTime dateCreation;
+    private LocalDateTime dateModification;
+    private Integer numCat;
     private String police;
-    private String codsit;
-    private String typePrestation;
+
+    @Enumerated(EnumType.STRING)
+    private StatutPrestation codsit;
+
+    @Enumerated(EnumType.STRING)
+    private TypeProcedure typeProcedure;
+
     private String cin;
     private String login;
     private String prestationUid;
     private String quittance;
-    private java.util.Date dateTransfert;
+    private LocalDateTime dateTransfert;
     private String usr;
     private String typ;
     private String token;
     private String commentaire;
     private String libNumCat;
 }
+package ma.marocainevie.prestation.domain.model;
 
-@Value("${ma_marocainevie_selfcare_mobile_directoryBase}")
-    private String ma_marocainevie_selfcare_mobile_directoryBase;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import ma.marocainevie.prestation.domain.model.enums.StatutPrestation;
 
-    @Value("${ma_marocainevie_selfcare_mobile_login}")
-    private String ma_marocainevie_selfcare_mobile_login;
+import java.time.LocalDateTime;
 
-    @Value("${ma_marocainevie_selfcare_mobile_password}")
-    private String ma_marocainevie_selfcare_mobile_password;
+@Entity
+@Table(name = "history_prestation")
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class HistoryPrestation {
 
-    @Value("${ma_marocainevie_selfcare_mobile_cert}")
-    private String ma_marocainevie_selfcare_mobile_cert;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Value("${ma_marocainevie_selfcare_mobile_server}")
-    private String ma_marocainevie_selfcare_mobile_server;
+    @ManyToOne
+    @JoinColumn(name = "prestation_id")
+    private Prestation prestation;
 
-    @Value("${ma_marocainevie_selfcare_mobile_port}")
-    private String ma_marocainevie_selfcare_mobile_port;
+    private LocalDateTime dateModification;
 
-    @Value("${ma_marocainevie_selfcare_mobile_timeout}")
-    private String ma_marocainevie_selfcare_mobile_timeout;
+    @Enumerated(EnumType.STRING)
+    private StatutPrestation statut;
 
-public boolean upload(byte[] image, String fileName, String dossier) throws ServiceException {
-        log.info("FTP upload initiated : fileName = {}, target folder = {}", fileName, dossier);
-        String ftpBaseDirectory = ma_marocainevie_selfcare_mobile_directoryBase + dossier;
-        String ftpLogin = ma_marocainevie_selfcare_mobile_login;
-        String ftpPassword = ma_marocainevie_selfcare_mobile_password;
-        String ftpServer = ma_marocainevie_selfcare_mobile_server;
-        String ftpPort = ma_marocainevie_selfcare_mobile_port;
-        ftpPort = ftpPort != null && !ftpPort.isEmpty() ? ftpPort : "21";
-        String ftpTimeout = ma_marocainevie_selfcare_mobile_timeout;
-        String ftpCertFile = ma_marocainevie_selfcare_mobile_cert;
+    private String modifiePar;
+}
+package ma.marocainevie.prestation.domain.service;
 
-        if (ftpCertFile != null && ftpCertFile.isEmpty()) {
-            ftpCertFile = null;
-            log.info("FTP cert file was empty, reset to null");
+import ma.marocainevie.prestation.api.dto.request.PrestationCreateRequest;
+import ma.marocainevie.prestation.domain.exception.PrestationBusinessException;
+import ma.marocainevie.prestation.domain.exception.PrestationErrorCode;
+import ma.marocainevie.prestation.domain.model.enums.ModeReglement;
+import ma.marocainevie.prestation.domain.model.enums.TypeProcedure;
+import ma.marocainevie.prestation.infrastructure.client.dto.ContractDTO;
+import ma.marocainevie.prestation.infrastructure.client.dto.CustomerDTO;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.time.Period;
+import java.util.regex.Pattern;
+
+@Component
+public class PrestationBusinessRules {
+
+    private static final Logger log = LoggerFactory.getLogger(PrestationBusinessRules.class);
+
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(
+            "[a-zA-Z0-9+._%\\-+]{1,256}@[a-zA-Z0-9][a-zA-Z0-9\\-]{0,64}(\\.[a-zA-Z0-9][a-zA-Z0-9\\-]{0,25})+");
+    private static final Pattern DIGITS_ONLY = Pattern.compile("[0-9]+");
+
+    private static final int RIB_LENGTH = 24;
+    private static final int AGE_MINIMUM_AVANCE = 50;
+    private static final int ANCIENNETE_MINIMUM_AVANCE_ANNEES = 8;
+    private static final int PLAFOND_AVANCE_PERCENT = 80;
+    private static final int PLAFOND_RACHAT_PARTIEL_PERCENT = 50;
+    private static final int NOMBRE_MAX_RACHATS_PARTIELS = 3;
+
+    public void checkFieldDemandePrestation(CustomerDTO customer, PrestationCreateRequest request) {
+        if (customer == null) {
+            fail(PrestationErrorCode.CUSTOMER_EMPTY);
         }
-
-        if (ftpPassword != null && ftpPassword.isEmpty()) {
-            ftpPassword = null;
-            log.info("FTP password was empty, reset to null");
+        if (StringUtils.isBlank(request.nomPrenom())) {
+            fail(PrestationErrorCode.FIELD_LAST_NAME_EMPTY);
         }
-        log.info("Delegating to internal upload handler");
-        return upload(image, fileName, ftpBaseDirectory, ftpLogin, ftpPassword, ftpCertFile, ftpServer, ftpPort, ftpTimeout);
+        if (StringUtils.isBlank(request.police())) {
+            fail(PrestationErrorCode.FIELD_POLICE_EMPTY);
+        }
+        if (request.numCat() == null) {
+            fail(PrestationErrorCode.NUMCAT_EMPTY);
+        }
+        if (request.versementEntreprise() && StringUtils.isBlank(request.nomEntreprise())) {
+            fail(PrestationErrorCode.FIELD_ENTREPRISE_EMPTY);
+        }
+        if (StringUtils.isNotBlank(request.email()) && !EMAIL_PATTERN.matcher(request.email()).matches()) {
+            fail(PrestationErrorCode.FIELD_EMAIL_FORMAT_ERROR);
+        }
+        if (customer.dateNaissance() == null) {
+            fail(PrestationErrorCode.FIELD_BIRTHDATE_EMPTY);
+        }
     }
+
+    public void checkContractNanti(ContractDTO contract) {
+        if (contract == null) {
+            fail(PrestationErrorCode.CONTRACT_EMPTY);
+        }
+        if (contract.nanti()) {
+            fail(PrestationErrorCode.CONTRACT_NANTI);
+        }
+    }
+
+    public void checkVirement(PrestationCreateRequest request, boolean fileProvided) {
+        if (request.modeReglement() != ModeReglement.VIREMENT) {
+            return;
+        }
+        if (StringUtils.isBlank(request.numeroCompteBancaire())) {
+            fail(PrestationErrorCode.FIELD_N_COMPTE_EMPTY);
+        }
+        if (!DIGITS_ONLY.matcher(request.numeroCompteBancaire()).matches()) {
+            fail(PrestationErrorCode.FIELD_N_COMPTE_ONLY_DIGITS);
+        }
+        if (request.numeroCompteBancaire().length() != RIB_LENGTH) {
+            fail(PrestationErrorCode.FIELD_N_COMPTE_EXACT_24);
+        }
+        if (!fileProvided) {
+            fail(PrestationErrorCode.FIELD_FILE_EMPTY);
+        }
+    }
+
+    public float applyRGAvance(PrestationCreateRequest request, CustomerDTO customer, ContractDTO contract) {
+        if (request.typeProcedure() != TypeProcedure.AVANCE) {
+            return request.montantOperation();
+        }
+        int age = Period.between(customer.dateNaissance(), LocalDate.now()).getYears();
+        int anciennete = Period.between(contract.dateSouscription(), LocalDate.now()).getYears();
+
+        if (age < AGE_MINIMUM_AVANCE) {
+            fail(PrestationErrorCode.AGE_CRITERIA);
+        }
+        if (anciennete < ANCIENNETE_MINIMUM_AVANCE_ANNEES) {
+            fail(PrestationErrorCode.DURE_CONTRAT_CRITERIA);
+        }
+
+        float plafond = plafond(contract.montantEnCours(), PLAFOND_AVANCE_PERCENT);
+        float montant = plafonnerOuVerifier(request, plafond, PrestationErrorCode.MONTANT_SUPERIEUR_80_ERROR);
+
+        if (contract.montantAvanceEnCours() > 0) {
+            fail(PrestationErrorCode.AVANCE_NON_REMBOURSE_ERROR);
+        }
+        return montant;
+    }
+
+    public float applyRGRachatPartiel(PrestationCreateRequest request, ContractDTO contract) {
+        if (request.typeProcedure() != TypeProcedure.RACHAT_PARTIEL) {
+            return request.montantOperation();
+        }
+        float plafond = plafond(contract.montantEnCours(), PLAFOND_RACHAT_PARTIEL_PERCENT);
+        float montant = plafonnerOuVerifier(request, plafond, PrestationErrorCode.MONTANT_SUPERIEUR_50_ERROR);
+
+        if (contract.montantAvanceEnCours() > 0) {
+            fail(PrestationErrorCode.AVANCE_ENCOURS_ERROR);
+        }
+        if (contract.nombreRachatsPartiels() != null && contract.nombreRachatsPartiels() > NOMBRE_MAX_RACHATS_PARTIELS) {
+            fail(PrestationErrorCode.NOMBRE_RACHAT_ERROR);
+        }
+        return montant;
+    }
+
+    private float plafonnerOuVerifier(PrestationCreateRequest request, float plafond, PrestationErrorCode depassementCode) {
+        if (request.valeurMaximale()) {
+            return plafond;
+        }
+        if (request.montantOperation() > plafond) {
+            fail(depassementCode);
+        }
+        return request.montantOperation();
+    }
+
+    private float plafond(float montantEnCours, int percent) {
+        return (montantEnCours * percent) / 100f;
+    }
+
+    private void fail(PrestationErrorCode errorCode) {
+        log.warn("Règle de gestion violée : {}", errorCode);
+        throw new PrestationBusinessException(errorCode);
+    }
+}
+package ma.marocainevie.prestation.domain.service;
+
+import ma.marocainevie.prestation.domain.exception.PrestationBusinessException;
+import ma.marocainevie.prestation.domain.exception.PrestationErrorCode;
+import org.springframework.stereotype.Component;
+
+import java.util.Set;
+
+@Component
+public class FileValidationService {
+
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of("pdf", "jpg", "jpeg", "png");
+    private static final long BYTES_PER_MEGABYTE = 1_000_000L;
+
+    public void validate(byte[] content, String fileExtension, int maxFileSizeMb) {
+        if (fileExtension == null || !ALLOWED_EXTENSIONS.contains(fileExtension.toLowerCase())) {
+            throw new PrestationBusinessException(PrestationErrorCode.FIELD_FILE_INVALID_EXTENSION);
+        }
+        if ((content.length / BYTES_PER_MEGABYTE) > maxFileSizeMb) {
+            throw new PrestationBusinessException(PrestationErrorCode.FIELD_FILE_TOO_LARGE);
+        }
+    }
+}
+package ma.marocainevie.prestation.domain.service;
+
+public interface FileStorageService {
+
+    String store(byte[] content, String fileName, String folder);
+}
+package ma.marocainevie.prestation.domain.service;
+
+import ma.marocainevie.prestation.api.dto.request.PrestationCreateRequest;
+import ma.marocainevie.prestation.api.dto.request.PrestationStatusUpdateRequest;
+import ma.marocainevie.prestation.domain.model.Prestation;
+
+public interface PrestationService {
+
+    Prestation createPrestation(String login,
+                                 PrestationCreateRequest request,
+                                 byte[] attachment,
+                                 String attachmentFileName);
+
+    Prestation updateStatus(String prestationUid, String token, PrestationStatusUpdateRequest request);
+}
+package ma.marocainevie.prestation.domain.service.impl;
+
+import feign.FeignException;
+import lombok.RequiredArgsConstructor;
+import ma.marocainevie.prestation.api.dto.request.PrestationCreateRequest;
+import ma.marocainevie.prestation.api.dto.request.PrestationStatusUpdateRequest;
+import ma.marocainevie.prestation.domain.exception.PrestationAccessDeniedException;
+import ma.marocainevie.prestation.domain.exception.PrestationBusinessException;
+import ma.marocainevie.prestation.domain.exception.PrestationErrorCode;
+import ma.marocainevie.prestation.domain.model.HistoryPrestation;
+import ma.marocainevie.prestation.domain.model.Prestation;
+import ma.marocainevie.prestation.domain.model.enums.StatutPrestation;
+import ma.marocainevie.prestation.domain.service.FileStorageService;
+import ma.marocainevie.prestation.domain.service.FileValidationService;
+import ma.marocainevie.prestation.domain.service.PrestationBusinessRules;
+import ma.marocainevie.prestation.domain.service.PrestationService;
+import ma.marocainevie.prestation.infrastructure.client.ContractClient;
+import ma.marocainevie.prestation.infrastructure.client.CustomerClient;
+import ma.marocainevie.prestation.infrastructure.client.dto.ContractDTO;
+import ma.marocainevie.prestation.infrastructure.client.dto.CustomerDTO;
+import ma.marocainevie.prestation.infrastructure.repository.HistoryPrestationRepository;
+import ma.marocainevie.prestation.infrastructure.repository.PrestationRepository;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class PrestationServiceImpl implements PrestationService {
+
+    private static final Logger log = LoggerFactory.getLogger(PrestationServiceImpl.class);
+    private static final String PRESTATION_FOLDER = "prestations";
+    private static final String MODIFIE_PAR_MOBILE = "User Mobile";
+    private static final String MODIFIE_PAR_LMV = "LMV";
+
+    private final CustomerClient customerClient;
+    private final ContractClient contractClient;
+    private final PrestationBusinessRules businessRules;
+    private final FileValidationService fileValidationService;
+    private final FileStorageService fileStorageService;
+    private final PrestationRepository prestationRepository;
+    private final HistoryPrestationRepository historyPrestationRepository;
+    private final PrestationProperties prestationProperties;
+
+    @Override
+    @Transactional
+    public Prestation createPrestation(String login, PrestationCreateRequest request,
+                                        byte[] attachment, String attachmentFileName) {
+        log.debug("Début création prestation : login={}, typeProcedure={}", login, request.typeProcedure());
+
+        CustomerDTO customer = fetchCustomer(login);
+        businessRules.checkFieldDemandePrestation(customer, request);
+
+        ContractDTO contract = fetchContract(customer.cin(), request.numCat(), request.police());
+        businessRules.checkContractNanti(contract);
+
+        float montantAvance = businessRules.applyRGAvance(request, customer, contract);
+        float montantRachatPartiel = businessRules.applyRGRachatPartiel(request, contract);
+        float montantOperation = resolveMontantOperation(request, montantAvance, montantRachatPartiel);
+
+        businessRules.checkVirement(request, attachment != null);
+
+        String storedFileName = null;
+        if (attachment != null) {
+            String fileExtension = extractExtension(attachmentFileName);
+            fileValidationService.validate(attachment, fileExtension, prestationProperties.maxFileSizeMb());
+            storedFileName = generateFileName(fileExtension);
+            fileStorageService.store(attachment, storedFileName, PRESTATION_FOLDER);
+        }
+
+        Prestation saved = savePrestation(request, customer, contract, montantOperation, storedFileName);
+        recordHistory(saved, StatutPrestation.DEMANDE_MOBILE, MODIFIE_PAR_MOBILE);
+
+        log.debug("Fin création prestation : uid={}", saved.getPrestationUid());
+        return saved;
+    }
+
+    @Override
+    @Transactional
+    public Prestation updateStatus(String prestationUid, String token, PrestationStatusUpdateRequest request) {
+        log.debug("Début mise à jour statut prestation : uid={}", prestationUid);
+
+        Prestation prestation = prestationRepository.findByPrestationUid(prestationUid)
+                .orElseThrow(() -> new PrestationBusinessException(PrestationErrorCode.PRESTATION_EMPTY));
+
+        if (!prestation.getToken().equals(token)) {
+            throw new PrestationAccessDeniedException();
+        }
+        if (request.statut() == prestation.getCodsit()) {
+            throw new PrestationBusinessException(PrestationErrorCode.STATUS_EXIST);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        prestation.setCodsit(request.statut());
+        prestation.setDateModification(now);
+        prestation.setQuittance(request.quittance());
+        if (StringUtils.isNotBlank(request.message())) {
+            prestation.setCommentaire(formatCommentaire(request.message(), now));
+        }
+        prestationRepository.save(prestation);
+
+        recordHistory(prestation, request.statut(), MODIFIE_PAR_LMV);
+
+        log.debug("Fin mise à jour statut prestation : uid={}", prestationUid);
+        return prestation;
+    }
+
+    private CustomerDTO fetchCustomer(String login) {
+        try {
+            return customerClient.findByLogin(login);
+        } catch (FeignException.NotFound e) {
+            throw new PrestationBusinessException(PrestationErrorCode.CUSTOMER_EMPTY);
+        }
+    }
+
+    private ContractDTO fetchContract(String cin, Integer numCat, String police) {
+        try {
+            return contractClient.getContract(cin, numCat, police);
+        } catch (FeignException.NotFound e) {
+            throw new PrestationBusinessException(PrestationErrorCode.CONTRACT_EMPTY);
+        }
+    }
+
+    private float resolveMontantOperation(PrestationCreateRequest request, float montantAvance, float montantRachatPartiel) {
+        return switch (request.typeProcedure()) {
+            case AVANCE -> montantAvance;
+            case RACHAT_PARTIEL -> montantRachatPartiel;
+            case RACHAT_TOTAL -> request.montantOperation();
+        };
+    }
+
+    private Prestation savePrestation(PrestationCreateRequest request, CustomerDTO customer,
+                                       ContractDTO contract, float montantOperation, String storedFileName) {
+        LocalDateTime now = LocalDateTime.now();
+        Prestation prestation = Prestation.builder()
+                .prestationUid(UUID.randomUUID().toString())
+                .versementEntreprise(request.versementEntreprise())
+                .nomEntreprise(request.nomEntreprise())
+                .valeurMaximale(request.valeurMaximale())
+                .montantOperation(montantOperation)
+                .modeReglement(request.modeReglement())
+                .dateCreation(now)
+                .dateModification(now)
+                .numCat(request.numCat())
+                .police(request.police())
+                .codsit(StatutPrestation.DEMANDE_MOBILE)
+                .typeProcedure(request.typeProcedure())
+                .cin(customer.cin())
+                .login(customer.login())
+                .usr(generateUsr(customer))
+                .numeroCompteBancaire(request.numeroCompteBancaire())
+                .typ(request.typeProcedure().code())
+                .token(UUID.randomUUID().toString())
+                .libNumCat(contract.libNumCat())
+                .build();
+
+        if (storedFileName != null) {
+            prestation.setReleveIdentiteBancaire(prestationProperties.imageBaseUrl() + storedFileName);
+        }
+        return prestationRepository.save(prestation);
+    }
+
+    private void recordHistory(Prestation prestation, StatutPrestation statut, String modifiePar) {
+        HistoryPrestation history = HistoryPrestation.builder()
+                .prestation(prestation)
+                .dateModification(LocalDateTime.now())
+                .statut(statut)
+                .modifiePar(modifiePar)
+                .build();
+        historyPrestationRepository.save(history);
+    }
+
+    private String generateUsr(CustomerDTO customer) {
+        if (StringUtils.isBlank(customer.nom()) || StringUtils.isBlank(customer.prenom())) {
+            return "";
+        }
+        return customer.prenom().charAt(0) + "." + customer.nom();
+    }
+
+    private String generateFileName(String fileExtension) {
+        return "Prestation_" + System.currentTimeMillis() + "." + fileExtension;
+    }
+
+    private String extractExtension(String originalFileName) {
+        if (originalFileName == null || !originalFileName.contains(".")) {
+            return "";
+        }
+        return originalFileName.substring(originalFileName.lastIndexOf('.') + 1);
+    }
+
+    private String formatCommentaire(String message, LocalDateTime time) {
+        return "[" + MODIFIE_PAR_LMV + " - " + time + "] " + message;
+    }
+}
+package ma.marocainevie.prestation.domain.service.impl;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "selfcare.mobile.prestation")
+public record PrestationProperties(
+        String imageBaseUrl,
+        int maxFileSizeMb
+) {
+}
+package ma.marocainevie.prestation.infrastructure.repository;
+
+import ma.marocainevie.prestation.domain.model.Prestation;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface PrestationRepository extends JpaRepository<Prestation, Long> {
+
+    Optional<Prestation> findByPrestationUid(String prestationUid);
+}
+package ma.marocainevie.prestation.infrastructure.repository;
+
+import ma.marocainevie.prestation.domain.model.HistoryPrestation;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface HistoryPrestationRepository extends JpaRepository<HistoryPrestation, Long> {
+}
+
+package ma.marocainevie.prestation.infrastructure.storage;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "selfcare.mobile.ftp")
+public record FtpProperties(
+        String directoryBase,
+        String login,
+        String password,
+        String cert,
+        String server,
+        String port,
+        int timeoutMs,
+        int maxFileSizeMb
+) {
+    public FtpProperties {
+        if (port == null || port.isBlank()) {
+            port = "21";
+        }
+    }
+}
+
+package ma.marocainevie.prestation.infrastructure.storage;
+
+import lombok.RequiredArgsConstructor;
+import ma.marocainevie.prestation.domain.service.FileStorageService;
+import org.apache.commons.net.ftp.FTPClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+
+@Service
+@RequiredArgsConstructor
+public class FtpFileStorageService implements FileStorageService {
+
+    private static final Logger log = LoggerFactory.getLogger(FtpFileStorageService.class);
+
+    private final FtpProperties ftpProperties;
+
+    @Override
+    public String store(byte[] content, String fileName, String folder) {
+        String targetDirectory = ftpProperties.directoryBase() + folder;
+        log.info("Upload FTP démarré : fileName={}, targetDirectory={}", fileName, targetDirectory);
+
+        FTPClient ftpClient = new FTPClient();
+        try {
+            connect(ftpClient);
+            login(ftpClient);
+            ftpClient.changeWorkingDirectory(targetDirectory);
+
+            try (ByteArrayInputStream inputStream = new ByteArrayInputStream(content)) {
+                boolean stored = ftpClient.storeFile(fileName, inputStream);
+                if (!stored) {
+                    throw new FileStorageException("Échec du dépôt FTP pour le fichier " + fileName);
+                }
+            }
+            log.info("Upload FTP terminé avec succès : fileName={}", fileName);
+            return folder + "/" + fileName;
+
+        } catch (IOException e) {
+            throw new FileStorageException("Erreur de communication FTP lors de l'upload de " + fileName, e);
+        } finally {
+            disconnectQuietly(ftpClient);
+        }
+    }
+
+    private void connect(FTPClient ftpClient) throws IOException {
+        int port = Integer.parseInt(ftpProperties.port());
+        ftpClient.setConnectTimeout(ftpProperties.timeoutMs());
+        ftpClient.connect(ftpProperties.server(), port);
+        int reply = ftpClient.getReplyCode();
+        if (!org.apache.commons.net.ftp.FTPReply.isPositiveCompletion(reply)) {
+            throw new FileStorageException("Connexion FTP refusée par le serveur, code=" + reply);
+        }
+    }
+
+    private void login(FTPClient ftpClient) throws IOException {
+        boolean loggedIn = ftpClient.login(ftpProperties.login(), ftpProperties.password());
+        if (!loggedIn) {
+            throw new FileStorageException("Authentification FTP échouée pour l'utilisateur configuré");
+        }
+    }
+
+    private void disconnectQuietly(FTPClient ftpClient) {
+        try {
+            if (ftpClient.isConnected()) {
+                ftpClient.logout();
+                ftpClient.disconnect();
+            }
+        } catch (IOException e) {
+            log.warn("Erreur non bloquante lors de la fermeture de la connexion FTP", e);
+        }
+    }
+}
+
+package ma.marocainevie.prestation.infrastructure.storage;
+
+public class FileStorageException extends RuntimeException {
+
+    public FileStorageException(String message) {
+        super(message);
+    }
+
+    public FileStorageException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+
+
+package ma.marocainevie.prestation.api.dto.request;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import ma.marocainevie.prestation.domain.model.enums.ModeReglement;
+import ma.marocainevie.prestation.domain.model.enums.TypeProcedure;
+
+public record PrestationCreateRequest(
+
+        @NotNull Integer numCat,
+        @NotBlank String police,
+        @NotNull TypeProcedure typeProcedure,
+
+        boolean versementEntreprise,
+        String nomEntreprise,
+
+        boolean valeurMaximale,
+        @Positive float montantOperation,
+
+        @NotNull ModeReglement modeReglement,
+        String numeroCompteBancaire,
+
+        @NotBlank String nomPrenom,
+        @Email String email
+) {
+}
+
+
+package ma.marocainevie.prestation.api.dto.request;
+
+import jakarta.validation.constraints.NotNull;
+import ma.marocainevie.prestation.domain.model.enums.StatutPrestation;
+
+public record PrestationStatusUpdateRequest(
+        @NotNull StatutPrestation statut,
+        String quittance,
+        String message
+) {
+}
+
+
+package ma.marocainevie.prestation.api.dto.response;
+
+import ma.marocainevie.prestation.domain.model.enums.ModeReglement;
+import ma.marocainevie.prestation.domain.model.enums.StatutPrestation;
+import ma.marocainevie.prestation.domain.model.enums.TypeProcedure;
+
+import java.time.LocalDateTime;
+
+public record PrestationResponse(
+        String prestationUid,
+        TypeProcedure typeProcedure,
+        StatutPrestation statut,
+        float montantOperation,
+        ModeReglement modeReglement,
+        String police,
+        LocalDateTime dateCreation
+) {
+}
+
+
+package ma.marocainevie.prestation.api.mapper;
+
+import ma.marocainevie.prestation.api.dto.response.PrestationResponse;
+import ma.marocainevie.prestation.domain.model.Prestation;
+import org.mapstruct.Mapper;
+
+@Mapper(componentModel = "spring")
+public interface PrestationMapper {
+
+    PrestationResponse toResponse(Prestation prestation);
+}
+
+package ma.marocainevie.prestation.api.controller;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import ma.marocainevie.prestation.api.dto.request.PrestationCreateRequest;
+import ma.marocainevie.prestation.api.dto.request.PrestationStatusUpdateRequest;
+import ma.marocainevie.prestation.api.dto.response.PrestationResponse;
+import ma.marocainevie.prestation.api.mapper.PrestationMapper;
+import ma.marocainevie.prestation.domain.model.Prestation;
+import ma.marocainevie.prestation.domain.service.PrestationService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+
+@RestController
+@RequiredArgsConstructor
+public class PrestationController {
+
+    private static final String LOGIN_HEADER = "X-User-Login";
+
+    private final PrestationService prestationService;
+    private final PrestationMapper prestationMapper;
+
+    @PostMapping(
+            path = "/api/v1/prestations",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<PrestationResponse> create(
+            @RequestHeader(LOGIN_HEADER) String login,
+            @RequestPart("prestation") @Valid PrestationCreateRequest request,
+            @RequestPart(value = "releveIdentiteBancaire", required = false) MultipartFile releveIdentiteBancaire) {
+
+        Prestation created = prestationService.createPrestation(
+                login,
+                request,
+                readBytes(releveIdentiteBancaire),
+                originalFileName(releveIdentiteBancaire));
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(prestationMapper.toResponse(created));
+    }
+
+    @PutMapping(
+            path = "/api/v1/prestations/{prestationUid}/statut",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<PrestationResponse> updateStatus(
+            @PathVariable String prestationUid,
+            @RequestHeader("X-Prestation-Token") String token,
+            @RequestBody @Valid PrestationStatusUpdateRequest request) {
+
+        Prestation updated = prestationService.updateStatus(prestationUid, token, request);
+        return ResponseEntity.ok(prestationMapper.toResponse(updated));
+    }
+
+    private byte[] readBytes(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return null;
+        }
+        try {
+            return file.getBytes();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Impossible de lire le fichier joint", e);
+        }
+    }
+
+    private String originalFileName(MultipartFile file) {
+        return file == null ? null : file.getOriginalFilename();
+    }
+}
+
+
+package ma.marocainevie.prestation.config;
+
+import ma.marocainevie.prestation.domain.exception.PrestationAccessDeniedException;
+import ma.marocainevie.prestation.domain.exception.PrestationBusinessException;
+import ma.marocainevie.prestation.infrastructure.storage.FileStorageException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(PrestationBusinessException.class)
+    public ResponseEntity<ProblemDetail> handleBusinessException(PrestationBusinessException e) {
+        log.warn("Erreur métier : {}", e.errorCode());
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(e.errorCode().httpStatus(), e.getMessage());
+        problem.setTitle(e.errorCode().name());
+        return ResponseEntity.status(e.errorCode().httpStatus()).body(problem);
+    }
+
+    @ExceptionHandler(PrestationAccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleAccessDenied(PrestationAccessDeniedException e) {
+        log.warn("Accès refusé : {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.getMessage()));
+    }
+
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<ProblemDetail> handleFileStorage(FileStorageException e) {
+        log.error("Erreur de stockage de fichier", e);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Le service de dépôt de fichier est momentanément indisponible"));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ProblemDetail> handleValidation(MethodArgumentNotValidException e) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Requête invalide");
+        e.getBindingResult().getFieldErrors().forEach(fieldError ->
+                problem.setProperty(fieldError.getField(), fieldError.getDefaultMessage()));
+        return ResponseEntity.badRequest().body(problem);
+    }
+}
